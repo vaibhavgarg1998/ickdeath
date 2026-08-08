@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { AssetImage } from "@/components/AssetImage";
 import { BuyNowButton } from "@/components/BuyNowButton";
 
 const features = [
@@ -41,7 +41,7 @@ export function Hero() {
 
       <div className="animate-rise-delay-1 relative mt-5 overflow-hidden bg-bg-stage sm:mt-8 md:mt-12">
         <div className="pointer-events-none absolute left-2 top-2 size-10 sm:left-4 sm:top-4 sm:size-16 md:left-6 md:top-6 md:size-[121px]">
-          <Image
+          <AssetImage
             src="/assets/corner-tl.svg"
             alt=""
             fill
@@ -49,7 +49,7 @@ export function Hero() {
           />
         </div>
         <div className="pointer-events-none absolute bottom-2 right-2 size-10 rotate-180 sm:bottom-4 sm:right-4 sm:size-16 md:bottom-6 md:right-6 md:size-[121px]">
-          <Image
+          <AssetImage
             src="/assets/corner-br.svg"
             alt=""
             fill
@@ -59,7 +59,7 @@ export function Hero() {
 
         <div className="relative mx-auto flex min-h-[240px] items-center justify-center px-3 py-8 sm:min-h-[320px] sm:px-4 sm:py-12 md:min-h-[560px] md:px-8 md:py-16 lg:min-h-[720px]">
           <div className="animate-glow-pulse pointer-events-none absolute left-1/2 top-1/2 size-[min(110vw,420px)] -translate-x-1/2 -translate-y-1/2 sm:size-[min(95vw,540px)] lg:size-[780px]">
-            <Image
+            <AssetImage
               src="/assets/glow-ellipse.svg"
               alt=""
               fill
@@ -69,7 +69,7 @@ export function Hero() {
 
           <div className="relative z-10 flex w-full max-w-6xl items-center justify-center">
             <div className="relative h-[170px] w-[58%] overflow-hidden xs:h-[200px] sm:h-[260px] md:h-[440px] lg:h-[560px]">
-              <Image
+              <AssetImage
                 src="/assets/product-open.png"
                 alt="ICK DEATH open product box with seat safe tab"
                 fill
@@ -79,7 +79,7 @@ export function Hero() {
               />
             </div>
             <div className="relative -ml-[12%] h-[185px] w-[52%] overflow-hidden sm:-ml-[10%] sm:h-[280px] md:h-[480px] lg:h-[600px]">
-              <Image
+              <AssetImage
                 src="/assets/product-closed.png"
                 alt="ICK DEATH product box"
                 fill
@@ -100,7 +100,7 @@ export function Hero() {
               className="flex items-center gap-2 font-[family-name:var(--font-bebas)] text-base tracking-wide text-neon sm:gap-2.5 sm:text-2xl md:text-3xl lg:text-[40px]"
             >
               <span className="relative inline-flex size-7 shrink-0 items-center justify-center overflow-hidden sm:size-10 md:size-14">
-                <Image
+                <AssetImage
                   src={feature.icon}
                   alt=""
                   width={feature.width}

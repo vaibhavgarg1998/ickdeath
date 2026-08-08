@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { AssetImage } from "@/components/AssetImage";
 import { AMAZON_URL, FLIPKART_URL } from "@/lib/buy";
 
 type BuyNowModalProps = {
@@ -14,7 +14,7 @@ type BuyNowModalProps = {
 function AmazonMark() {
   return (
     <span className="relative flex h-full w-full items-center justify-center px-2">
-      <Image
+      <AssetImage
         src="/assets/amazon-smile.png"
         alt="Amazon"
         width={178}
@@ -32,7 +32,7 @@ function AmazonMark() {
 function FlipkartMark() {
   return (
     <span className="relative flex h-full w-full items-center justify-center px-2">
-      <Image
+      <AssetImage
         src="/assets/flipkart-logo.png"
         alt="Flipkart"
         width={124}
@@ -68,7 +68,7 @@ export function BuyNowModal({ open, onClose }: BuyNowModalProps) {
           className="absolute right-3.5 top-3.5 z-20 size-[18px]"
           aria-label="Close"
         >
-          <Image
+          <AssetImage
             src="/assets/buy-close.svg"
             alt=""
             width={18}
@@ -79,7 +79,7 @@ export function BuyNowModal({ open, onClose }: BuyNowModalProps) {
 
         <div className="flex flex-col items-center px-5 pb-8 pt-9 sm:px-7 sm:pb-9 sm:pt-10">
           <div className="relative size-14 shrink-0">
-            <Image
+            <AssetImage
               src="/assets/buy-cart.svg"
               alt=""
               width={56}

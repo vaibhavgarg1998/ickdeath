@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { AssetImage } from "@/components/AssetImage";
 
 const steps = [
   {
@@ -54,7 +54,7 @@ export function HowToUse() {
               className="border border-border-soft bg-black p-4 sm:p-5 md:p-8"
             >
               <div className="relative aspect-[16/10] w-full overflow-hidden sm:aspect-[576/314]">
-                <Image
+                <AssetImage
                   src={step.image}
                   alt={step.description}
                   fill
