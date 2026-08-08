@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { AssetImage } from "@/components/AssetImage";
 
 const contents = [
   "1X Ick Death Lifter",
@@ -58,7 +58,7 @@ export function WhatsInTheBox() {
         </div>
 
         <div className="w-full min-w-0 overflow-hidden border border-black bg-black">
-          <Image
+          <AssetImage
             src="/assets/box-contents.jpg"
             alt="ICK DEATH kit contents laid out"
             width={1408}

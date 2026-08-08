@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
+import { AssetImage } from "@/components/AssetImage";
 import { BuyNowButton } from "@/components/BuyNowButton";
 
 const links = [
@@ -40,7 +40,7 @@ export function Header() {
           className="relative h-12 w-[84px] shrink-0 sm:h-16 sm:w-[112px] md:h-[88px] md:w-[128px] lg:h-[110px] lg:w-[160px]"
           onClick={closeMenu}
         >
-          <Image
+          <AssetImage
             src="/assets/logo-header.svg"
             alt="ICK DEATH"
             fill
