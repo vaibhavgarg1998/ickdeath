@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #101010;
+  --bg-elevated: #181818;
+  --bg-stage: #050605;
+  --neon: #c1ef04;
+  --neon-glow: rgba(193, 239, 4, 0.5);
+  --muted: #3e3d3d;
+  --border-soft: #6f6c8f;
+  --text: #ffffff;
+  --text-soft: #f5f5f5;
+  --text-dim: #d1cece;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-stage: var(--bg-stage);
+  --color-neon: var(--neon);
+  --color-muted: var(--muted);
+  --color-border-soft: var(--border-soft);
+  --color-text-soft: var(--text-soft);
+  --color-text-dim: var(--text-dim);
+  --font-display: var(--font-bebas);
+  --font-anton: var(--font-anton);
+  --font-mono-body: var(--font-ibm-plex);
+  --font-mono-space: var(--font-space-mono);
+  --font-sans: var(--font-inter);
+  --breakpoint-xs: 400px;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Avoid content sitting under iOS notches / home indicator */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.text-neon-glow {
+  text-shadow: 4px 4px 12px var(--neon-glow);
+}
+
+@media (min-width: 768px) {
+  .text-neon-glow {
+    text-shadow: 8px 8px 20px var(--neon-glow);
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: rise-in 0.8s ease-out both;
+}
+
+.animate-rise-delay-1 {
+  animation: rise-in 0.8s ease-out 0.12s both;
+}
+
+.animate-rise-delay-2 {
+  animation: rise-in 0.8s ease-out 0.24s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-rise-delay-1,
+  .animate-rise-delay-2,
+  .animate-glow-pulse {
+    animation: none;
+  }
+}
