@@ -1,21 +1,21 @@
 "use client";
 
-import { useBuyNow } from "@/components/BuyNowProvider";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { CHECKOUT_PATH } from "@/lib/buy";
 
 type BuyNowButtonProps = {
   className?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 };
 
 export function BuyNowButton({
   className,
   children = "Buy Now",
 }: BuyNowButtonProps) {
-  const { open } = useBuyNow();
-
   return (
-    <button type="button" onClick={open} className={className}>
+    <Link href={CHECKOUT_PATH} className={className}>
       {children}
-    </button>
+    </Link>
   );
 }
