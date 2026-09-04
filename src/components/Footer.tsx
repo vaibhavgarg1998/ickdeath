@@ -1,5 +1,6 @@
 import { AssetImage } from "@/components/AssetImage";
-import { AMAZON_URL, FLIPKART_URL } from "@/lib/buy";
+import Link from "next/link";
+import { TRACK_PATH } from "@/lib/buy";
 
 const socials = [
   {
@@ -7,16 +8,16 @@ const socials = [
     src: "/assets/icon-instagram.svg",
     label: "Instagram",
   },
-  {
-    href: FLIPKART_URL,
-    src: "/assets/icon-web.png",
-    label: "Buy on Flipkart",
-  },
-  {
-    href: AMAZON_URL,
-    src: "/assets/icon-amazon.svg",
-    label: "Buy on Amazon",
-  },
+  // {
+  //   href: FLIPKART_URL,
+  //   src: "/assets/icon-web.png",
+  //   label: "Buy on Flipkart",
+  // },
+  // {
+  //   href: AMAZON_URL,
+  //   src: "/assets/icon-amazon.svg",
+  //   label: "Buy on Amazon",
+  // },
 ];
 
 export function Footer() {
@@ -33,6 +34,9 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col items-center gap-4 text-center font-[family-name:var(--font-inter)] text-base font-semibold text-white sm:gap-6 sm:text-lg md:flex-row md:gap-12 lg:gap-[150px] lg:text-[22px]">
+          <Link href={TRACK_PATH} className="transition-colors hover:text-neon">
+            Track order
+          </Link>
           <a href="#" className="transition-colors hover:text-neon">
             Terms & Privacy
           </a>

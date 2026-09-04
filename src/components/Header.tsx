@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AssetImage } from "@/components/AssetImage";
 import { BuyNowButton } from "@/components/BuyNowButton";
+import { TRACK_PATH } from "@/lib/buy";
+import { withBasePath } from "@/lib/paths";
 
 const links = [
-  { href: "#product", label: "Product" },
-  { href: "#how-to-use", label: "How to use" },
+  { href: `${withBasePath("/")}#product`, label: "Product" },
+  { href: `${withBasePath("/")}#how-to-use`, label: "How to use" },
+  { href: TRACK_PATH, label: "Track order" },
 ];
 
 export function Header() {
@@ -35,8 +39,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/5 bg-bg/95 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-[1728px] items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 md:px-10 lg:px-16 lg:py-5">
-        <a
-          href="#top"
+        <Link
+          href="/"
           className="relative h-12 w-[84px] shrink-0 sm:h-16 sm:w-[112px] md:h-[88px] md:w-[128px] lg:h-[110px] lg:w-[160px]"
           onClick={closeMenu}
         >
@@ -47,18 +51,28 @@ export function Header() {
             className="object-contain object-left"
             priority
           />
-        </a>
+        </Link>
 
         <nav className="hidden items-center gap-8 font-[family-name:var(--font-inter)] text-base font-medium text-text-soft md:flex lg:gap-16 lg:text-2xl">
-          {links.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="transition-colors hover:text-neon"
-            >
-              {link.label}
-            </a>
-          ))}
+          {links.map((link) =>
+            link.href === TRACK_PATH ? (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="transition-colors hover:text-neon"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.href}
+                href={link.href}
+                className="transition-colors hover:text-neon"
+              >
+                {link.label}
+              </a>
+            ),
+          )}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -101,16 +115,27 @@ export function Header() {
           className="border-t border-white/10 bg-bg px-4 pb-5 pt-3 md:hidden"
         >
           <nav className="flex flex-col gap-1 font-[family-name:var(--font-inter)] text-lg font-medium text-text-soft">
-            {links.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="border-b border-white/10 py-3.5 transition-colors hover:text-neon"
-                onClick={closeMenu}
-              >
-                {link.label}
-              </a>
-            ))}
+            {links.map((link) =>
+              link.href === TRACK_PATH ? (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="border-b border-white/10 py-3.5 transition-colors hover:text-neon"
+                  onClick={closeMenu}
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="border-b border-white/10 py-3.5 transition-colors hover:text-neon"
+                  onClick={closeMenu}
+                >
+                  {link.label}
+                </a>
+              ),
+            )}
           </nav>
         </div>
       ) : null}

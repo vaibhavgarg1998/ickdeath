@@ -14,11 +14,26 @@ service cloud.firestore {
         && request.resource.data.orderStatus == 'confirmed'
         && request.resource.data.paymentMethod in ['razorpay', 'whatsapp'];
 
-      // Only signed-in admin users can list / read / update.
-      // Payment "paid" updates should use Firebase Admin from the verify API.
-      allow read, update: if request.auth != null;
+      // Guests can fetch a single order by ID for tracking.
+      allow get: if true;
 
+      // Phone tracking: a query must prove contact.phone is at least 10 chars
+      // (equality to a mobile number). Unconstrained list is denied because of
+      // the __track_sentinel__ document (empty phone). Admins can still list all.
+      allow list: if request.auth != null
+        || (resource.data.contact.phone is string
+            && resource.data.contact.phone.size() >= 10);
+
+      allow update: if request.auth != null;
       allow delete: if false;
+    }
+
+    // Phone → order ID index for extra lookup paths.
+    match /phoneIndex/{phone}/orders/{orderId} {
+      allow create: if phone.matches('^[6-9][0-9]{9}$')
+        && request.resource.data.orderId == orderId;
+      allow get, list: if true;
+      allow update, delete: if false;
     }
   }
 }
