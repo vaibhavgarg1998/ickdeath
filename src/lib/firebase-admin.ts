@@ -1,9 +1,10 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import type { PlacedOrder } from "@/lib/orders";
+import type { PlacedOrder, PublicTrackedOrder, TrackQueryKind } from "@/lib/orders";
+import { TRACK_SENTINEL_ID, toPublicTrackedOrder, uniquePhoneVariants } from "@/lib/orders";
 import { PRODUCT } from "@/lib/product";
 
-function isAdminConfigured(): boolean {
+export function isFirebaseAdminConfigured(): boolean {
   return Boolean(
     process.env.FIREBASE_ADMIN_PROJECT_ID &&
       process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
@@ -12,7 +13,7 @@ function isAdminConfigured(): boolean {
 }
 
 export function getFirebaseAdminApp(): App {
-  if (!isAdminConfigured()) {
+  if (!isFirebaseAdminConfigured()) {
     throw new Error(
       "Firebase Admin is not configured. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY.",
     );
@@ -71,4 +72,36 @@ export async function markOrderPaidAdmin(input: {
       createdAt: input.order.createdAt,
     });
   }
+}
+
+export async function findOrdersForTracking(
+  query: TrackQueryKind,
+): Promise<PublicTrackedOrder[]> {
+  const db = getFirestore(getFirebaseAdminApp());
+
+  if (query.kind === "orderId") {
+    if (query.orderId === TRACK_SENTINEL_ID) return [];
+    const snap = await db.collection("orders").doc(query.orderId).get();
+    if (!snap.exists) return [];
+    return [toPublicTrackedOrder(snap.data()!)];
+  }
+
+  const byId = new Map<string, PublicTrackedOrder>();
+  const snaps = await Promise.all(
+    uniquePhoneVariants(query.phone).map((variant) =>
+      db.collection("orders").where("contact.phone", "==", variant).limit(20).get(),
+    ),
+  );
+
+  for (const snap of snaps) {
+    for (const docSnap of snap.docs) {
+      if (docSnap.id === TRACK_SENTINEL_ID) continue;
+      const order = toPublicTrackedOrder(docSnap.data());
+      if (order.orderId) byId.set(order.orderId, order);
+    }
+  }
+
+  return [...byId.values()].sort((a, b) =>
+    a.createdAt < b.createdAt ? 1 : -1,
+  );
 }

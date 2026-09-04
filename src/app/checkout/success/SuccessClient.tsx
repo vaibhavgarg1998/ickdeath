@@ -9,6 +9,7 @@ import {
 } from "@/lib/checkout-storage";
 import { formatINR, PRODUCT } from "@/lib/product";
 import { customerWhatsAppUrl } from "@/lib/place-order";
+import { TRACK_PATH } from "@/lib/buy";
 
 export function CheckoutSuccessClient() {
   const order = useSyncExternalStore(
@@ -80,8 +81,14 @@ export function CheckoutSuccessClient() {
                   </p>
                 )}
                 <Link
-                  href="/"
+                  href={`${TRACK_PATH}?order=${encodeURIComponent(order.orderId)}`}
                   className="flex h-12 w-full items-center justify-center border border-neon/50 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-neon transition-opacity hover:opacity-90"
+                >
+                  Track this order
+                </Link>
+                <Link
+                  href="/"
+                  className="flex h-12 w-full items-center justify-center border border-white/20 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-text-dim transition-colors hover:text-white"
                 >
                   Back to home
                 </Link>
@@ -91,14 +98,23 @@ export function CheckoutSuccessClient() {
             <>
               <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
                 No order found in this browser session. If you just ordered,
-                check WhatsApp for your confirmation.
+                check WhatsApp for your confirmation, or track with your order
+                ID or mobile number.
               </p>
-              <Link
-                href="/checkout/"
-                className="mt-8 inline-flex h-12 items-center bg-neon px-6 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-bg"
-              >
-                Start checkout
-              </Link>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href={TRACK_PATH}
+                  className="inline-flex h-12 items-center justify-center border border-neon/50 px-6 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-neon"
+                >
+                  Track order
+                </Link>
+                <Link
+                  href="/checkout/"
+                  className="inline-flex h-12 items-center justify-center bg-neon px-6 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-bg"
+                >
+                  Start checkout
+                </Link>
+              </div>
             </>
           )}
         </div>

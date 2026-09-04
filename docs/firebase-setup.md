@@ -32,7 +32,14 @@ NEXT_PUBLIC_ORDERS_WEBHOOK_URL=
 ## 3. Use it
 
 - Customers: **Buy Now** → `/checkout/` → order is written to Firestore `orders/{orderId}`
+- Customers: **Track order** → `/track/` → lookup by order ID or mobile number
 - Admin: open `/admin/` → sign in → list orders → change **Order status** / **Payment status**
+
+After changing `firestore.rules`, paste them into Firestore → Rules → Publish. Guest tracking needs:
+
+- `allow get` on `orders/{orderId}` (track by order ID)
+- `allow list` when `contact.phone` is at least 10 characters (track by mobile number)
+- Republish after this change or mobile lookup will keep failing
 
 ## 4. Notes
 
