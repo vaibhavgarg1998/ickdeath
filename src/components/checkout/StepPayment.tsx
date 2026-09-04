@@ -15,19 +15,14 @@ type Props = {
 
 const METHODS: { id: PaymentMethod; title: string; hint: string }[] = [
   {
-    id: "upi",
-    title: "UPI",
-    hint: "Pay via UPI — we’ll confirm on WhatsApp (Phase 1)",
-  },
-  {
-    id: "card",
-    title: "Card / Netbanking",
-    hint: "Razorpay checkout coming next — order reserved now",
+    id: "razorpay",
+    title: "Pay online (Razorpay)",
+    hint: "UPI, cards, netbanking & wallets — secure checkout",
   },
   {
     id: "whatsapp",
     title: "Pay via WhatsApp",
-    hint: "Opens WhatsApp to confirm order & payment with us",
+    hint: "Place order now and complete payment with us on WhatsApp",
   },
 ];
 
@@ -41,6 +36,14 @@ export function StepPayment({
   error,
 }: Props) {
   const total = lineTotalPaise(draft.quantity);
+  const cta =
+    paymentMethod === "razorpay"
+      ? submitting
+        ? "Opening Razorpay…"
+        : `Pay ${formatINR(total)}`
+      : submitting
+        ? "Placing order…"
+        : "Place order";
 
   return (
     <div>
@@ -106,7 +109,7 @@ export function StepPayment({
           onClick={onPlaceOrder}
           className="inline-flex h-12 items-center bg-neon px-6 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-bg transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-          {submitting ? "Placing order…" : "Place order"}
+          {cta}
         </button>
       </div>
     </div>

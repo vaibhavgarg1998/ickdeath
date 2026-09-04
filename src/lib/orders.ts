@@ -18,15 +18,36 @@ export type CheckoutDraft = {
   address: CheckoutAddress;
 };
 
-export type PaymentMethod = "upi" | "card" | "whatsapp";
+export type PaymentMethod = "razorpay" | "whatsapp";
+
+export type PaymentStatus = "pending" | "paid" | "failed";
+
+export type OrderStatus =
+  | "confirmed"
+  | "packed"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export const ORDER_STATUSES: OrderStatus[] = [
+  "confirmed",
+  "packed",
+  "shipped",
+  "delivered",
+  "cancelled",
+];
+
+export const PAYMENT_STATUSES: PaymentStatus[] = ["pending", "paid", "failed"];
 
 export type PlacedOrder = CheckoutDraft & {
   orderId: string;
   createdAt: string;
   amountPaise: number;
   paymentMethod: PaymentMethod;
-  paymentStatus: "pending" | "paid";
-  orderStatus: "confirmed" | "packed" | "shipped" | "delivered";
+  paymentStatus: PaymentStatus;
+  orderStatus: OrderStatus;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
 };
 
 export function generateOrderId(now = new Date()): string {

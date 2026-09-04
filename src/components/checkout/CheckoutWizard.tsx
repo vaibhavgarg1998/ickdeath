@@ -10,7 +10,11 @@ import {
   savePlacedOrder,
   subscribeCheckoutDraft,
 } from "@/lib/checkout-storage";
-import { placeOrder, customerWhatsAppUrl } from "@/lib/place-order";
+import {
+  placeOrder,
+  placeOrderWithRazorpay,
+  customerWhatsAppUrl,
+} from "@/lib/place-order";
 import { withBasePath } from "@/lib/paths";
 import { StepQuantity } from "@/components/checkout/StepQuantity";
 import { StepContact } from "@/components/checkout/StepContact";
@@ -35,13 +39,11 @@ export function CheckoutWizard() {
     getCheckoutDraftServerSnapshot,
   );
   const [step, setStep] = useState<StepId>("quantity");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("razorpay");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function updateDraft(
-    next: Parameters<typeof saveCheckoutDraft>[0],
-  ) {
+  function updateDraft(next: Parameters<typeof saveCheckoutDraft>[0]) {
     saveCheckoutDraft(next);
   }
 
@@ -51,7 +53,11 @@ export function CheckoutWizard() {
     setSubmitting(true);
     setError(null);
     try {
-      const order = await placeOrder({ draft, paymentMethod });
+      const order =
+        paymentMethod === "razorpay"
+          ? await placeOrderWithRazorpay({ draft })
+          : await placeOrder({ draft, paymentMethod });
+
       savePlacedOrder(order);
       clearCheckoutDraft();
 
@@ -63,8 +69,23 @@ export function CheckoutWizard() {
       window.location.href = withBasePath(
         `/checkout/success/?order=${encodeURIComponent(order.orderId)}`,
       );
-    } catch {
-      setError("Could not place order. Please try again.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Could not place order. Please try again.";
+
+      if (message.includes("cancelled") || message.includes("Payment cancelled")) {
+        setError("Payment was cancelled. You can try again.");
+      } else if (message.includes("Firebase")) {
+        setError("Order could not be saved. Check Firebase configuration.");
+      } else if (
+        message.includes("Razorpay") ||
+        message.includes("payment") ||
+        message.includes("503")
+      ) {
+        setError(message);
+      } else {
+        setError(message || "Could not place order. Please try again.");
+      }
       setSubmitting(false);
     }
   }
