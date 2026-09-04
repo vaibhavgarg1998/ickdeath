@@ -5,6 +5,14 @@ import {
   type PaymentMethod,
   type PlacedOrder,
 } from "@/lib/orders";
+import { isFirebaseConfigured } from "@/lib/firebase";
+import { createOrderInFirestore } from "@/lib/orders-db";
+import {
+  createRazorpayOrder,
+  loadRazorpayScript,
+  openRazorpayCheckout,
+  verifyRazorpayPayment,
+} from "@/lib/razorpay-client";
 
 function whatsappBusinessNumber(): string {
   return (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "").replace(/\D/g, "");
@@ -52,25 +60,84 @@ async function postWebhook(order: PlacedOrder): Promise<void> {
       mode: "no-cors",
     });
   } catch {
-    // Webhook is best-effort in Phase 1 (Google Apps Script / Sheet).
+    // Webhook is best-effort.
   }
 }
 
+function buildPendingOrder(
+  draft: CheckoutDraft,
+  paymentMethod: PaymentMethod,
+): PlacedOrder {
+  return {
+    ...draft,
+    orderId: generateOrderId(),
+    createdAt: new Date().toISOString(),
+    amountPaise: lineTotalPaise(draft.quantity),
+    paymentMethod,
+    paymentStatus: "pending",
+    orderStatus: "confirmed",
+  };
+}
+
+/** WhatsApp / manual path — reserve order without online payment. */
 export async function placeOrder(input: {
   draft: CheckoutDraft;
   paymentMethod: PaymentMethod;
 }): Promise<PlacedOrder> {
-  const order: PlacedOrder = {
-    ...input.draft,
-    orderId: generateOrderId(),
-    createdAt: new Date().toISOString(),
-    amountPaise: lineTotalPaise(input.draft.quantity),
-    paymentMethod: input.paymentMethod,
-    // Phase 1: payment confirmed manually / via WhatsApp until Razorpay webhooks.
-    paymentStatus: input.paymentMethod === "whatsapp" ? "pending" : "pending",
-    orderStatus: "confirmed",
-  };
+  const order = buildPendingOrder(input.draft, input.paymentMethod);
+
+  if (isFirebaseConfigured()) {
+    await createOrderInFirestore(order);
+  }
 
   await postWebhook(order);
   return order;
+}
+
+/** Razorpay path — create pending order, collect payment, verify, mark paid. */
+export async function placeOrderWithRazorpay(input: {
+  draft: CheckoutDraft;
+}): Promise<PlacedOrder> {
+  const pending = buildPendingOrder(input.draft, "razorpay");
+
+  if (isFirebaseConfigured()) {
+    await createOrderInFirestore(pending);
+  }
+
+  const scriptOk = await loadRazorpayScript();
+  if (!scriptOk) {
+    throw new Error("Could not load Razorpay checkout");
+  }
+
+  const created = await createRazorpayOrder({
+    orderId: pending.orderId,
+    draft: input.draft,
+  });
+
+  const paid = await new Promise<PlacedOrder>((resolve, reject) => {
+    openRazorpayCheckout({
+      create: created,
+      onDismiss: () => reject(new Error("Payment cancelled")),
+      onFailure: (message) => reject(new Error(message)),
+      onSuccess: (response) => {
+        void (async () => {
+          try {
+            const order = await verifyRazorpayPayment({
+              orderId: pending.orderId,
+              draft: input.draft,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+            resolve(order);
+          } catch (err) {
+            reject(err);
+          }
+        })();
+      },
+    });
+  });
+
+  await postWebhook(paid);
+  return paid;
 }

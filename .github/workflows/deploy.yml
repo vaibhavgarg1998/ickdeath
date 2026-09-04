@@ -27,6 +27,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Exclude API routes for static GitHub Pages export
+        run: rm -rf src/app/api
+
       - name: Build static export
         run: npm run build
         env:
