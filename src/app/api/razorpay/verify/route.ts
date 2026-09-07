@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { markOrderPaidAdmin } from "@/lib/firebase-admin";
+import {
+  isFirebaseAdminConfigured,
+  markOrderPaidAdmin,
+} from "@/lib/firebase-admin";
 import {
   isRazorpayConfigured,
   verifyRazorpaySignature,
@@ -70,15 +73,22 @@ export async function POST(request: Request) {
       razorpayPaymentId,
     };
 
-    try {
-      await markOrderPaidAdmin({
-        order,
-        razorpayOrderId,
-        razorpayPaymentId,
-      });
-    } catch (adminErr) {
-      // Payment is valid even if Firestore admin update fails — still return order.
-      console.error("firebase admin mark paid failed", adminErr);
+    // Signature is valid — payment succeeded. Sync Firestore when Admin is configured.
+    if (isFirebaseAdminConfigured()) {
+      try {
+        await markOrderPaidAdmin({
+          order,
+          razorpayOrderId,
+          razorpayPaymentId,
+        });
+      } catch (adminErr) {
+        console.error("firebase admin mark paid failed", adminErr);
+        // Do not fail checkout: money was captured; admin can mark paid manually.
+      }
+    } else {
+      console.warn(
+        "FIREBASE_ADMIN_* missing or invalid — order stays pending in Firestore until marked paid in admin",
+      );
     }
 
     return NextResponse.json({ ok: true, order });

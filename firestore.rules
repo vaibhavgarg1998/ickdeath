@@ -12,7 +12,7 @@ service cloud.firestore {
         && request.resource.data.orderId == orderId
         && request.resource.data.paymentStatus == 'pending'
         && request.resource.data.orderStatus == 'confirmed'
-        && request.resource.data.paymentMethod in ['razorpay', 'whatsapp'];
+        && request.resource.data.paymentMethod == 'razorpay';
 
       // Guests can fetch a single order by ID for tracking.
       allow get: if true;
