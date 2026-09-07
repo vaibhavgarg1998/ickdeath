@@ -246,6 +246,14 @@ function OrderDetail({
       </dl>
 
       <div className="mt-6 space-y-4 border-t border-white/10 pt-5">
+        <p className="font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim">
+          Payment status updates automatically from Razorpay (
+          <span className="text-white/70">pending → paid / failed</span>
+          ). Order status starts as{" "}
+          <span className="text-white/70">confirmed</span>. You can change either
+          anytime.
+        </p>
+
         <label className="block">
           <span className="mb-1.5 block text-xs uppercase tracking-wider text-text-dim">
             Order status

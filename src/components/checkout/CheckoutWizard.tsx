@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useSyncExternalStore, type ReactNode } from "react";
-import type { PaymentMethod } from "@/lib/orders";
 import {
   clearCheckoutDraft,
   getCheckoutDraftServerSnapshot,
@@ -10,11 +9,7 @@ import {
   savePlacedOrder,
   subscribeCheckoutDraft,
 } from "@/lib/checkout-storage";
-import {
-  placeOrder,
-  placeOrderWithRazorpay,
-  customerWhatsAppUrl,
-} from "@/lib/place-order";
+import { placeOrderWithRazorpay } from "@/lib/place-order";
 import { withBasePath } from "@/lib/paths";
 import { StepQuantity } from "@/components/checkout/StepQuantity";
 import { StepContact } from "@/components/checkout/StepContact";
@@ -39,7 +34,6 @@ export function CheckoutWizard() {
     getCheckoutDraftServerSnapshot,
   );
   const [step, setStep] = useState<StepId>("quantity");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("razorpay");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,18 +47,10 @@ export function CheckoutWizard() {
     setSubmitting(true);
     setError(null);
     try {
-      const order =
-        paymentMethod === "razorpay"
-          ? await placeOrderWithRazorpay({ draft })
-          : await placeOrder({ draft, paymentMethod });
+      const order = await placeOrderWithRazorpay({ draft });
 
       savePlacedOrder(order);
       clearCheckoutDraft();
-
-      const wa = customerWhatsAppUrl(order);
-      if (wa && paymentMethod === "whatsapp") {
-        window.open(wa, "_blank", "noopener,noreferrer");
-      }
 
       window.location.href = withBasePath(
         `/checkout/success/?order=${encodeURIComponent(order.orderId)}`,
@@ -160,8 +146,6 @@ export function CheckoutWizard() {
         {step === "payment" ? (
           <StepPayment
             draft={draft}
-            paymentMethod={paymentMethod}
-            onPaymentMethodChange={setPaymentMethod}
             onBack={() => setStep("summary")}
             onPlaceOrder={handlePlaceOrder}
             submitting={submitting}

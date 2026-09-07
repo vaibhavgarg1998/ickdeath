@@ -112,6 +112,19 @@ export async function verifyRazorpayPayment(input: {
   return data.order;
 }
 
+/** Best-effort — updates admin live payment status when checkout fails. */
+export async function markRazorpayPaymentFailed(orderId: string): Promise<void> {
+  try {
+    await fetch(apiUrl("/api/razorpay/mark-failed"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    });
+  } catch {
+    // Non-blocking for the customer checkout UX.
+  }
+}
+
 export function openRazorpayCheckout(input: {
   create: RazorpayCreateResponse;
   onSuccess: (response: RazorpaySuccessResponse) => void;

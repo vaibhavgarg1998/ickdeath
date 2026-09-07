@@ -47,8 +47,6 @@ Keep the `\n` escapes when pasting into `.env.local`.
 6. `/api/razorpay/verify` checks signature → marks order **paid**
 7. Customer lands on `/checkout/success/`
 
-WhatsApp remains available as a manual payment fallback.
-
 ## 4. Vercel env vars
 
 Add the same keys in Vercel → Project → Settings → Environment Variables (including `FIREBASE_ADMIN_PRIVATE_KEY`).

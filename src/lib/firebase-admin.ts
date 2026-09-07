@@ -1,15 +1,36 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import type { PlacedOrder, PublicTrackedOrder, TrackQueryKind } from "@/lib/orders";
+import type {
+  PaymentStatus,
+  PlacedOrder,
+  PublicTrackedOrder,
+  TrackQueryKind,
+} from "@/lib/orders";
 import { TRACK_SENTINEL_ID, toPublicTrackedOrder, uniquePhoneVariants } from "@/lib/orders";
 import { PRODUCT } from "@/lib/product";
 
 export function isFirebaseAdminConfigured(): boolean {
-  return Boolean(
-    process.env.FIREBASE_ADMIN_PROJECT_ID &&
-      process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
-      process.env.FIREBASE_ADMIN_PRIVATE_KEY,
-  );
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID?.trim();
+  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
+  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim();
+  if (!projectId || !clientEmail || !privateKey) return false;
+  // Placeholder / incomplete keys from .env.example
+  if (privateKey.includes("...") || !privateKey.includes("BEGIN")) return false;
+  return true;
+}
+
+function normalizePrivateKey(raw: string): string {
+  let key = raw.trim();
+  // Strip wrapping quotes from .env values
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+  // Convert escaped newlines from single-line env vars
+  key = key.replace(/\\n/g, "\n");
+  return key.trim();
 }
 
 export function getFirebaseAdminApp(): App {
@@ -22,10 +43,7 @@ export function getFirebaseAdminApp(): App {
   const existing = getApps()[0];
   if (existing) return existing;
 
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY!.replace(
-    /\\n/g,
-    "\n",
-  );
+  const privateKey = normalizePrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY!);
 
   return initializeApp({
     credential: cert({
@@ -72,6 +90,27 @@ export async function markOrderPaidAdmin(input: {
       createdAt: input.order.createdAt,
     });
   }
+}
+
+/** Auto-set payment status (e.g. failed). Never downgrades a paid order. */
+export async function markOrderPaymentStatusAdmin(input: {
+  orderId: string;
+  paymentStatus: PaymentStatus;
+}): Promise<void> {
+  if (!isFirebaseAdminConfigured()) return;
+
+  const db = getFirestore(getFirebaseAdminApp());
+  const ref = db.collection("orders").doc(input.orderId);
+  const snap = await ref.get();
+  if (!snap.exists) return;
+
+  const current = snap.data()?.paymentStatus;
+  if (current === "paid") return;
+
+  await ref.update({
+    paymentStatus: input.paymentStatus,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 export async function findOrdersForTracking(
