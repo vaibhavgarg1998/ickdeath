@@ -8,6 +8,7 @@ import {
   updateOrderStatuses,
   type OrderRecord,
 } from "@/lib/orders-db";
+import { updateAdminOrderStatus, AdminApiError } from "@/lib/admin-api";
 import {
   ORDER_STATUSES,
   PAYMENT_STATUSES,
@@ -22,6 +23,7 @@ export function AdminOrdersPanel() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [whatsappNote, setWhatsappNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || !configured) {
@@ -46,14 +48,48 @@ export function AdminOrdersPanel() {
   async function patchStatus(input: {
     orderStatus?: OrderStatus;
     paymentStatus?: PaymentStatus;
+    resendWhatsApp?: boolean;
   }) {
-    if (!selected) return;
+    if (!selected || !user) return;
     setSaving(true);
     setError(null);
+    setWhatsappNote(null);
     try {
-      await updateOrderStatuses({ orderId: selected.orderId, ...input });
+      const token = await user.getIdToken();
+      const result = await updateAdminOrderStatus({
+        token,
+        orderId: selected.orderId,
+        orderStatus: input.orderStatus,
+        paymentStatus: input.paymentStatus,
+        resendWhatsApp: input.resendWhatsApp,
+      });
+      if (result.whatsapp?.sent) {
+        setWhatsappNote("WhatsApp update sent");
+      } else if (result.whatsapp?.error) {
+        setWhatsappNote(`WhatsApp: ${result.whatsapp.error}`);
+      } else if (result.whatsapp?.skipped) {
+        setWhatsappNote(result.whatsapp.skipped);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update order");
+      if (input.resendWhatsApp) {
+        setError(e instanceof Error ? e.message : "Failed to send WhatsApp");
+      } else if (e instanceof AdminApiError && e.status !== 503) {
+        setError(e.message);
+      } else {
+        try {
+          await updateOrderStatuses({
+            orderId: selected.orderId,
+            orderStatus: input.orderStatus,
+            paymentStatus: input.paymentStatus,
+          });
+        } catch (fallbackErr) {
+          setError(
+            fallbackErr instanceof Error
+              ? fallbackErr.message
+              : "Failed to update order",
+          );
+        }
+      }
     } finally {
       setSaving(false);
     }
@@ -176,9 +212,16 @@ export function AdminOrdersPanel() {
             <OrderDetail
               order={selected}
               saving={saving}
+              whatsappNote={whatsappNote}
               onOrderStatus={(orderStatus) => void patchStatus({ orderStatus })}
               onPaymentStatus={(paymentStatus) =>
                 void patchStatus({ paymentStatus })
+              }
+              onResendWhatsApp={() =>
+                void patchStatus({
+                  orderStatus: selected.orderStatus,
+                  resendWhatsApp: true,
+                })
               }
             />
           ) : (
@@ -195,13 +238,17 @@ export function AdminOrdersPanel() {
 function OrderDetail({
   order,
   saving,
+  whatsappNote,
   onOrderStatus,
   onPaymentStatus,
+  onResendWhatsApp,
 }: {
   order: OrderRecord;
   saving: boolean;
+  whatsappNote: string | null;
   onOrderStatus: (status: OrderStatus) => void;
   onPaymentStatus: (status: PaymentStatus) => void;
+  onResendWhatsApp: () => void;
 }) {
   const addr = order.address;
   return (
@@ -291,6 +338,40 @@ function OrderDetail({
         </label>
 
         {saving ? <p className="text-xs text-text-dim">Saving…</p> : null}
+
+        <div className="space-y-2 border-t border-white/10 pt-5">
+          <span className="block text-xs uppercase tracking-wider text-text-dim">
+            WhatsApp
+          </span>
+          {order.whatsapp?.lastEvent ? (
+            <p className="text-sm text-text-soft">
+              Last: {order.whatsapp.lastEvent}
+              {order.whatsapp.lastStatus ? ` · ${order.whatsapp.lastStatus}` : ""}
+              {order.whatsapp.lastSentAt
+                ? ` · ${new Date(order.whatsapp.lastSentAt).toLocaleString("en-IN")}`
+                : ""}
+            </p>
+          ) : (
+            <p className="text-sm text-text-dim">
+              No Cloud API message sent yet. Status changes send a utility
+              template when WhatsApp is configured.
+            </p>
+          )}
+          {order.whatsapp?.lastError ? (
+            <p className="text-xs text-red-400">{order.whatsapp.lastError}</p>
+          ) : null}
+          {whatsappNote ? (
+            <p className="text-xs text-neon">{whatsappNote}</p>
+          ) : null}
+          <button
+            type="button"
+            disabled={saving}
+            onClick={onResendWhatsApp}
+            className="h-10 border border-white/20 px-4 font-[family-name:var(--font-anton)] text-xs uppercase tracking-wider text-text-dim hover:text-white disabled:opacity-60"
+          >
+            Resend WhatsApp update
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  // Keep POST webhooks (WhatsApp) from being 308'd to a trailing slash.
+  skipTrailingSlashRedirect: true,
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },

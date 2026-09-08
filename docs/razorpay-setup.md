@@ -45,7 +45,8 @@ Keep the `\n` escapes when pasting into `.env.local`.
 4. `/api/razorpay/create-order` creates a Razorpay order (amount from server)
 5. Razorpay Checkout modal (UPI / card / netbanking)
 6. `/api/razorpay/verify` checks signature → marks order **paid**
-7. Customer lands on `/checkout/success/`
+7. Server sends WhatsApp **order confirmed** (if Cloud API is configured — see `docs/whatsapp-setup.md`)
+8. Customer lands on `/checkout/success/`
 
 ## 4. Vercel env vars
 

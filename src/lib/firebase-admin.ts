@@ -1,10 +1,14 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import type {
+  OrderStatus,
   PaymentStatus,
   PlacedOrder,
   PublicTrackedOrder,
   TrackQueryKind,
+  WhatsAppOrderEvent,
+  WhatsAppSendStatus,
 } from "@/lib/orders";
 import { TRACK_SENTINEL_ID, toPublicTrackedOrder, uniquePhoneVariants } from "@/lib/orders";
 import { PRODUCT } from "@/lib/product";
@@ -142,5 +146,132 @@ export async function findOrdersForTracking(
 
   return [...byId.values()].sort((a, b) =>
     a.createdAt < b.createdAt ? 1 : -1,
+  );
+}
+
+export async function verifyAdminIdToken(idToken: string) {
+  return getAuth(getFirebaseAdminApp()).verifyIdToken(idToken);
+}
+
+export async function getOrderAdmin(orderId: string): Promise<PlacedOrder | null> {
+  const db = getFirestore(getFirebaseAdminApp());
+  const snap = await db.collection("orders").doc(orderId).get();
+  if (!snap.exists) return null;
+  return snap.data() as PlacedOrder;
+}
+
+export async function updateOrderStatusesAdmin(input: {
+  orderId: string;
+  orderStatus?: OrderStatus;
+  paymentStatus?: PaymentStatus;
+}): Promise<PlacedOrder> {
+  const db = getFirestore(getFirebaseAdminApp());
+  const ref = db.collection("orders").doc(input.orderId);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    throw new Error("Order not found");
+  }
+
+  const patch: Record<string, string> = {
+    updatedAt: new Date().toISOString(),
+  };
+  if (input.orderStatus) patch.orderStatus = input.orderStatus;
+  if (input.paymentStatus) patch.paymentStatus = input.paymentStatus;
+  await ref.update(patch);
+
+  const next = await ref.get();
+  return next.data() as PlacedOrder;
+}
+
+export async function recordWhatsAppOnOrderAdmin(input: {
+  orderId: string;
+  event: WhatsAppOrderEvent;
+  template?: string;
+  messageId?: string;
+  status: WhatsAppSendStatus;
+  error?: string;
+}): Promise<void> {
+  const db = getFirestore(getFirebaseAdminApp());
+  const ref = db.collection("orders").doc(input.orderId);
+  const now = new Date().toISOString();
+  const snap = await ref.get();
+  if (!snap.exists) return;
+
+  const update: Record<string, unknown> = {
+    updatedAt: now,
+    "whatsapp.lastEvent": input.event,
+    "whatsapp.lastTemplate": input.template ?? "",
+    "whatsapp.lastMessageId": input.messageId ?? "",
+    "whatsapp.lastSentAt": now,
+    "whatsapp.lastStatus": input.status,
+    "whatsapp.lastError": input.error ?? "",
+  };
+  if (input.status !== "failed") {
+    update["whatsapp.eventsSent"] = FieldValue.arrayUnion(input.event);
+  }
+  await ref.update(update);
+
+  if (input.messageId) {
+    await db.collection("whatsappMessages").doc(input.messageId).set({
+      orderId: input.orderId,
+      event: input.event,
+      createdAt: now,
+    });
+  }
+}
+
+export async function recordWhatsAppDeliveryStatusAdmin(input: {
+  messageId: string;
+  status: WhatsAppSendStatus;
+}): Promise<void> {
+  const db = getFirestore(getFirebaseAdminApp());
+  const map = await db.collection("whatsappMessages").doc(input.messageId).get();
+  const orderId = map.data()?.orderId as string | undefined;
+  if (!orderId) return;
+
+  const ref = db.collection("orders").doc(orderId);
+  const snap = await ref.get();
+  if (!snap.exists) return;
+
+  await ref.update({
+    updatedAt: new Date().toISOString(),
+    "whatsapp.lastMessageId": input.messageId,
+    "whatsapp.lastStatus": input.status,
+  });
+}
+
+export async function claimWhatsAppInboundAdmin(messageId: string): Promise<boolean> {
+  const db = getFirestore(getFirebaseAdminApp());
+  try {
+    await db.collection("whatsappInbound").doc(messageId).create({
+      createdAt: new Date().toISOString(),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function getWhatsAppSessionAdmin(waId: string): Promise<{
+  autoReply: boolean;
+} | null> {
+  const db = getFirestore(getFirebaseAdminApp());
+  const snap = await db.collection("whatsappSessions").doc(waId).get();
+  if (!snap.exists) return null;
+  const autoReply = snap.data()?.autoReply !== false;
+  return { autoReply };
+}
+
+export async function setWhatsAppSessionAdmin(input: {
+  waId: string;
+  autoReply: boolean;
+}): Promise<void> {
+  const db = getFirestore(getFirebaseAdminApp());
+  await db.collection("whatsappSessions").doc(input.waId).set(
+    {
+      autoReply: input.autoReply,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true },
   );
 }

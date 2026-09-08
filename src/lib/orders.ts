@@ -39,6 +39,30 @@ export const ORDER_STATUSES: OrderStatus[] = [
 
 export const PAYMENT_STATUSES: PaymentStatus[] = ["pending", "paid", "failed"];
 
+export type WhatsAppSendStatus =
+  | "accepted"
+  | "sent"
+  | "delivered"
+  | "read"
+  | "failed";
+
+export type WhatsAppOrderEvent =
+  | "confirmed"
+  | "packed"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export type OrderWhatsApp = {
+  lastEvent?: WhatsAppOrderEvent | string;
+  lastTemplate?: string;
+  lastMessageId?: string;
+  lastSentAt?: string;
+  lastStatus?: WhatsAppSendStatus;
+  lastError?: string;
+  eventsSent?: string[];
+};
+
 export type PlacedOrder = CheckoutDraft & {
   orderId: string;
   createdAt: string;
@@ -48,6 +72,7 @@ export type PlacedOrder = CheckoutDraft & {
   orderStatus: OrderStatus;
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
+  whatsapp?: OrderWhatsApp;
 };
 
 export function generateOrderId(now = new Date()): string {

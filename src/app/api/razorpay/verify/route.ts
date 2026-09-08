@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   isFirebaseAdminConfigured,
+  getOrderAdmin,
   markOrderPaidAdmin,
 } from "@/lib/firebase-admin";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/lib/razorpay-server";
 import { lineTotalPaise } from "@/lib/product";
 import type { CheckoutDraft, PlacedOrder } from "@/lib/orders";
+import { notifyOrderWhatsApp } from "@/lib/whatsapp-notify";
 
 export const runtime = "nodejs";
 
@@ -89,6 +91,19 @@ export async function POST(request: Request) {
       console.warn(
         "FIREBASE_ADMIN_* missing or invalid — order stays pending in Firestore until marked paid in admin",
       );
+    }
+
+    try {
+      let toNotify = order;
+      if (isFirebaseAdminConfigured()) {
+        const stored = await getOrderAdmin(order.orderId);
+        if (stored) {
+          toNotify = { ...stored, ...order, whatsapp: stored.whatsapp };
+        }
+      }
+      await notifyOrderWhatsApp({ order: toNotify, event: "confirmed" });
+    } catch (waErr) {
+      console.error("whatsapp confirmed failed", waErr);
     }
 
     return NextResponse.json({ ok: true, order });

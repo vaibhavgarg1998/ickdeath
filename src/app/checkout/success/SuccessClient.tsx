@@ -38,6 +38,7 @@ export function CheckoutSuccessClient() {
                 <span className="text-neon">{order.orderId}</span> is confirmed.
                 We&apos;ll send updates on WhatsApp to{" "}
                 <span className="text-white">+91 {order.contact.phone}</span>.
+                Reply to that chat anytime to check status.
               </p>
 
               <dl className="mt-8 space-y-3 font-[family-name:var(--font-ibm-plex)] text-sm text-text-soft">
