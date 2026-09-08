@@ -71,7 +71,7 @@ export function Footer() {
 
       <div className="relative z-10 flex flex-col items-center gap-4 px-4 pb-8 sm:gap-5 md:block md:px-0">
         <p className="text-center font-[family-name:var(--font-inter)] text-xs leading-relaxed text-text-dim sm:text-sm md:px-24 md:text-xl lg:px-32">
-          All Right Reserved. Copyright 2026 Saorsa Technocrat Pvt. Ltd
+          All Rights Reserved. Copyright 2026 Saorsa Technocrat Pvt. Ltd
         </p>
 
         <div className="relative size-12 shrink-0 overflow-hidden sm:size-14 md:absolute md:bottom-8 md:right-10 md:size-24 lg:bottom-10 lg:right-12 lg:size-32">
