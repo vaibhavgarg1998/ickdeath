@@ -19,9 +19,14 @@ export default function CheckoutPage() {
           >
             ← Back to product
           </Link>
-          <p className="font-[family-name:var(--font-bebas)] text-xl tracking-wide text-neon">
-            CHECKOUT
-          </p>
+          <div className="text-right">
+            <p className="font-[family-name:var(--font-bebas)] text-xl tracking-wide text-neon">
+              CHECKOUT
+            </p>
+            <p className="mt-0.5 font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.16em] text-text-dim">
+              Payment partner Razorpay
+            </p>
+          </div>
         </div>
       </header>
 

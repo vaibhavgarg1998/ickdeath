@@ -29,8 +29,11 @@ export function StepPayment({
       <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
         Amount due:{" "}
         <span className="text-neon">{formatINR(total)}</span>. Pay securely
-        with UPI, cards, netbanking, or wallets. You&apos;ll get tracking
-        updates on WhatsApp after the order is placed.
+        with UPI, cards, netbanking, or wallets via Razorpay. You&apos;ll get
+        tracking updates on WhatsApp after the order is placed.
+      </p>
+      <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-[0.16em] text-text-dim">
+        Payment partner <span className="text-white">Razorpay</span>
       </p>
 
       {error ? (
