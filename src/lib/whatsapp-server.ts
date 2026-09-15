@@ -18,11 +18,13 @@ export type WhatsAppTemplateParam = {
   text: string;
 };
 
+function phoneNumberId(): string {
+  // Docs use {PHONE_NUMBER_ID} as a placeholder — strip braces if copied through.
+  return (process.env.WHATSAPP_PHONE_NUMBER_ID ?? "").replace(/[{}\s]/g, "");
+}
+
 export function isWhatsAppConfigured(): boolean {
-  return Boolean(
-    process.env.WHATSAPP_TOKEN?.trim() &&
-      process.env.WHATSAPP_PHONE_NUMBER_ID?.trim(),
-  );
+  return Boolean(process.env.WHATSAPP_TOKEN?.trim() && phoneNumberId());
 }
 
 export function getWhatsAppVerifyToken(): string {
@@ -76,15 +78,15 @@ export function templateNameForEvent(event: WhatsAppOrderEvent): string {
 }
 
 export function templateLanguage(): string {
-  return process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "en";
+  return process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "en_US";
 }
 
 function messagesUrl(): string {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
-  if (!phoneNumberId) {
+  const id = phoneNumberId();
+  if (!id) {
     throw new Error("WHATSAPP_PHONE_NUMBER_ID is not configured");
   }
-  return `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`;
+  return `https://graph.facebook.com/${GRAPH_VERSION}/${id}/messages`;
 }
 
 function authHeaders(): HeadersInit {

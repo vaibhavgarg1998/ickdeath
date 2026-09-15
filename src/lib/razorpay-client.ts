@@ -1,5 +1,5 @@
 import type { CheckoutDraft, PlacedOrder } from "@/lib/orders";
-import { withBasePath } from "@/lib/paths";
+import { apiUrl, readApiJson } from "@/lib/api";
 
 export type RazorpayCreateResponse = {
   keyId: string;
@@ -49,12 +49,6 @@ declare global {
   }
 }
 
-function apiUrl(path: string): string {
-  // Avoid trailing slash on API routes (trailingSlash config is for pages).
-  const normalized = path.endsWith("/") ? path.slice(0, -1) : path;
-  return withBasePath(normalized);
-}
-
 export async function loadRazorpayScript(): Promise<boolean> {
   if (typeof window === "undefined") return false;
   if (window.Razorpay) return true;
@@ -85,7 +79,7 @@ export async function createRazorpayOrder(input: {
     }),
   });
 
-  const data = (await res.json()) as RazorpayCreateResponse & { error?: string };
+  const data = await readApiJson<RazorpayCreateResponse & { error?: string }>(res);
   if (!res.ok) {
     throw new Error(data.error ?? "Could not start Razorpay payment");
   }
@@ -105,7 +99,7 @@ export async function verifyRazorpayPayment(input: {
     body: JSON.stringify(input),
   });
 
-  const data = (await res.json()) as { order?: PlacedOrder; error?: string };
+  const data = await readApiJson<{ order?: PlacedOrder; error?: string }>(res);
   if (!res.ok || !data.order) {
     throw new Error(data.error ?? "Payment verification failed");
   }

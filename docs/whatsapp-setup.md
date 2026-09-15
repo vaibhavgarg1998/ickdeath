@@ -10,7 +10,7 @@ This needs a **Node server** (same as Razorpay). GitHub Pages static export cann
 2. Complete WhatsApp Business Account (WABA) onboarding
 3. WhatsApp → API Setup → copy:
    - **Temporary / permanent access token** → `WHATSAPP_TOKEN`
-   - **Phone number ID** → `WHATSAPP_PHONE_NUMBER_ID`
+   - **Phone number ID** → `WHATSAPP_PHONE_NUMBER_ID` (digits only, e.g. `105954558954427` — **no** `{ }` around it, and not the `+91…` WhatsApp number)
 4. App settings → Basic → **App secret** → `WHATSAPP_APP_SECRET`
 5. Choose any verify string → `WHATSAPP_VERIFY_TOKEN` (you invent this)
 6. Create a **system user** token in Business Manager for production (temporary tokens expire in 24h)
@@ -20,6 +20,7 @@ Add to `.env.local` and Vercel → Environment Variables:
 ```bash
 WHATSAPP_TOKEN=
 WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_BUSINESS_ACCOUNT_ID=
 WHATSAPP_APP_SECRET=
 WHATSAPP_VERIFY_TOKEN=ickdeath-verify-change-me
 NEXT_PUBLIC_SITE_URL=https://ickdeath.com
@@ -40,13 +41,15 @@ The route verifies `hub.challenge` on GET and checks `X-Hub-Signature-256` on PO
 
 ## 3. Message templates (required)
 
-Create these as **Utility** templates in WhatsApp Manager (English `en`). Names must match the env vars (defaults below). Body variables are positional `{{1}}`, `{{2}}`, …
+Create these as **Utility** templates in WhatsApp Manager. Language must be **English (US)** → `en_US` (this is what the app sends). Names must match the env vars exactly. Body variables are positional `{{1}}`, `{{2}}`, …
+
+Status must be **Approved**. `PENDING` / `REJECTED` templates return this same error.
 
 | Event | Template name | Body |
 |---|---|---|
 | Payment captured | `ickdeath_order_confirmed` | `Hi {{1}}! Your ICK DEATH order {{2}} is confirmed. {{3}} — {{4}}. We'll notify you when it ships.` |
 | Admin → packed | `ickdeath_order_packed` | `Hi {{1}}, your order {{2}} is packed and ready to ship.` |
-| Admin → shipped | `ickdeath_order_shipped` | `Hi {{1}}, your order {{2}} is on the way! Track it here: {{3}}` |
+| Admin → shipped | `ickdeath_order_shipped` | `Hi {{1}}, your order {{2}} is on the way. Track it here: {{3}} Thanks for shopping with ICK DEATH.` |
 | Admin → delivered | `ickdeath_order_delivered` | `Hi {{1}}, your ICK DEATH order {{2}} has been delivered. Hope you love Seat Safe Tabs. Reply here if you need help.` |
 | Admin → cancelled | `ickdeath_order_cancelled` | `Hi {{1}}, your order {{2}} has been cancelled. If this is unexpected, reply here and we'll help.` |
 

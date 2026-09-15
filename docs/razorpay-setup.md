@@ -9,6 +9,8 @@ Use **Vercel** (or similar) for the Next.js app so `/api/razorpay/*` works.
 - Local: `npm run dev` (API routes enabled)
 - Production: deploy without `GITHUB_PAGES=true`
 - GitHub Pages static export still builds marketing/checkout UI, but online payment APIs are stripped in CI
+- **ickdeath.com** is currently that static host — paying there returns an HTML 404 (`Unexpected token '<'`). Use `npm run dev` or deploy the same app to **Vercel**
+- Optional: `NEXT_PUBLIC_API_BASE_URL=https://your-app.vercel.app` so the GitHub Pages storefront can call Vercel `/api/razorpay/*`
 
 ## 1. Razorpay Dashboard
 
