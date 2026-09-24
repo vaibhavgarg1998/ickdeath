@@ -1,4 +1,5 @@
 import type { CheckoutDraft, PlacedOrder } from "@/lib/orders";
+import { DEFAULT_COLORWAY, isColorwayId } from "@/lib/product";
 
 const DRAFT_KEY = "ickdeath_checkout_draft";
 const ORDER_KEY = "ickdeath_last_order";
@@ -9,12 +10,20 @@ const orderListeners = new Set<() => void>();
 export function emptyDraft(): CheckoutDraft {
   return {
     quantity: 1,
+    colorway: DEFAULT_COLORWAY,
     contact: { name: "", phone: "", email: "" },
     address: { line1: "", line2: "", pincode: "", city: "", state: "" },
   };
 }
 
 const SERVER_DRAFT = emptyDraft();
+
+function normalizeDraft(draft: CheckoutDraft): CheckoutDraft {
+  return {
+    ...draft,
+    colorway: isColorwayId(draft.colorway) ? draft.colorway : DEFAULT_COLORWAY,
+  };
+}
 
 let draftCacheRaw: string | null | undefined = undefined;
 let draftCacheValue: CheckoutDraft = SERVER_DRAFT;
@@ -28,7 +37,7 @@ function readDraft(): CheckoutDraft {
     if (raw === draftCacheRaw) return draftCacheValue;
     draftCacheRaw = raw;
     draftCacheValue = raw
-      ? ({ ...emptyDraft(), ...JSON.parse(raw) } as CheckoutDraft)
+      ? normalizeDraft({ ...emptyDraft(), ...JSON.parse(raw) })
       : emptyDraft();
     return draftCacheValue;
   } catch {

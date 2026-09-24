@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { CheckoutDraft } from "@/lib/orders";
-import { formatINR, lineTotalPaise, PRODUCT } from "@/lib/product";
+import { formatINR, lineTotalPaise, productNameForColorway } from "@/lib/product";
 import { NavRow } from "@/components/checkout/form-ui";
 
 type Props = {
@@ -26,7 +26,7 @@ export function StepSummary({ draft, onBack, onNext }: Props) {
 
       <dl className="mt-6 space-y-4 font-[family-name:var(--font-ibm-plex)] text-sm">
         <Row label="Product">
-          {PRODUCT.name} × {draft.quantity}
+          {productNameForColorway(draft.colorway)} × {draft.quantity}
         </Row>
         <Row label="Contact">
           {draft.contact.name}

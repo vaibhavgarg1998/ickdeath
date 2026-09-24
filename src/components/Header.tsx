@@ -41,11 +41,11 @@ export function Header() {
       <div className="mx-auto flex w-full max-w-[1728px] items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 md:px-10 lg:px-16 lg:py-5">
         <Link
           href="/"
-          className="relative h-12 w-[84px] shrink-0 sm:h-16 sm:w-[112px] md:h-[88px] md:w-[128px] lg:h-[110px] lg:w-[160px]"
+          className="relative h-12 w-[55px] shrink-0 sm:h-16 sm:w-[74px] md:h-20 md:w-[92px] lg:h-24 lg:w-[111px]"
           onClick={closeMenu}
         >
           <AssetImage
-            src="/assets/logo-header.svg"
+            src="/assets/logo.png"
             alt="ICK DEATH"
             fill
             className="object-contain object-left"

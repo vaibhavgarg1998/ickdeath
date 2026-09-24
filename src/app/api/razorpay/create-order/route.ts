@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { lineTotalPaise, PRODUCT } from "@/lib/product";
+import { lineTotalPaise, PRODUCT, productNameForColorway } from "@/lib/product";
 import {
   getRazorpayClient,
   getRazorpayKeyId,
@@ -11,6 +11,7 @@ export const runtime = "nodejs";
 type CreateBody = {
   orderId?: string;
   quantity?: number;
+  colorway?: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
         ickOrderId: orderId,
         productId: PRODUCT.id,
         quantity: String(quantity),
+        colorway: body.colorway ?? "",
         customerName: body.customerName ?? "",
         customerPhone: body.customerPhone ?? "",
       },
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
       amount: rzOrder.amount,
       currency: rzOrder.currency,
       orderId,
-      productName: PRODUCT.name,
+      productName: productNameForColorway(body.colorway),
       prefill: {
         name: body.customerName ?? "",
         email: body.customerEmail ?? "",

@@ -2,7 +2,15 @@
 
 import { AssetImage } from "@/components/AssetImage";
 import type { CheckoutDraft } from "@/lib/orders";
-import { formatINR, lineTotalPaise, PRODUCT } from "@/lib/product";
+import {
+  COLORWAYS,
+  formatINR,
+  getColorway,
+  lineTotalPaise,
+  PRODUCT,
+  productNameForColorway,
+  type ColorwayId,
+} from "@/lib/product";
 
 type Props = {
   draft: CheckoutDraft;
@@ -12,6 +20,7 @@ type Props = {
 
 export function StepQuantity({ draft, onChange, onNext }: Props) {
   const qty = draft.quantity;
+  const colorway = getColorway(draft.colorway);
 
   function setQty(next: number) {
     const clamped = Math.min(
@@ -21,27 +30,49 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
     onChange({ ...draft, quantity: clamped });
   }
 
+  function setColorway(id: ColorwayId) {
+    onChange({ ...draft, colorway: id });
+  }
+
   return (
     <div>
       <h2 className="font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-white sm:text-4xl">
-        Product &amp; quantity
+        Product / quantity
       </h2>
       <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
-        Choose how many packs you want. Total updates before you enter details.
+        Pick a colorway and how many packs you want.
       </p>
 
-      <div className="mt-6 flex gap-4 rounded-xl border border-white/10 bg-bg p-4">
-        <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-bg-stage sm:size-24">
-          <AssetImage
-            src={PRODUCT.imageSrc}
-            alt={PRODUCT.name}
-            fill
-            className="object-contain p-1"
-          />
+      <p className="mt-6 font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">
+        Selected pack
+      </p>
+
+      <div className="mt-3 flex gap-4 sm:gap-5">
+        <div
+          className="relative h-36 w-24 shrink-0 overflow-hidden bg-bg-stage sm:h-44 sm:w-28"
+          role="img"
+          aria-label={productNameForColorway(colorway.id)}
+        >
+          {COLORWAYS.map((option) => (
+            <AssetImage
+              key={option.id}
+              src={option.imageSrc}
+              alt=""
+              fill
+              priority
+              sizes="112px"
+              className={`object-contain p-1 ${
+                option.id === colorway.id ? "opacity-100" : "pointer-events-none opacity-0"
+              }`}
+            />
+          ))}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wide text-neon">
-            {PRODUCT.name}
+          <p className="font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">
+            Limited edition / {String(colorway.index).padStart(2, "0")}
+          </p>
+          <p className="mt-1 font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-white sm:text-4xl">
+            {productNameForColorway(colorway.id)}
           </p>
           <p className="mt-1 font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim">
             {PRODUCT.description}
@@ -49,13 +80,42 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
           <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-white">
             {formatINR(PRODUCT.unitPricePaise)} each
           </p>
+
+          <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">
+            Colorway
+          </p>
+          <div className="mt-2 flex items-center gap-2.5">
+            {COLORWAYS.map((option) => {
+              const selected = option.id === colorway.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-label={`${option.name} edition`}
+                  aria-pressed={selected}
+                  onClick={() => setColorway(option.id)}
+                  className={`size-6 rounded-full border-2 transition-transform ${
+                    selected
+                      ? "scale-110 border-neon"
+                      : "border-white/20 hover:border-white/50"
+                  }`}
+                  style={{ backgroundColor: option.swatch }}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-4">
-        <span className="font-[family-name:var(--font-ibm-plex)] text-sm text-text-soft">
-          Quantity
-        </span>
+        <div>
+          <p className="font-[family-name:var(--font-ibm-plex)] text-sm text-text-soft">
+            Quantity
+          </p>
+          <p className="mt-0.5 font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim">
+            Choose how many packs you want.
+          </p>
+        </div>
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -72,7 +132,7 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
           <button
             type="button"
             aria-label="Increase quantity"
-            className="inline-flex size-10 items-center justify-center rounded-lg border border-neon/50 text-neon transition-opacity hover:opacity-80 disabled:opacity-40"
+            className="inline-flex size-10 items-center justify-center rounded-lg border border-neon/50 text-neon transition-opacity hover:opacity-90 disabled:opacity-40"
             disabled={qty >= PRODUCT.maxQty}
             onClick={() => setQty(qty + 1)}
           >

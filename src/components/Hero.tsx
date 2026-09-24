@@ -1,6 +1,29 @@
 import { AssetImage } from "@/components/AssetImage";
 import { BuyNowButton } from "@/components/BuyNowButton";
 
+const heroBoxes = [
+  {
+    src: "/assets/hero-box-1.png",
+    alt: "ICK DEATH Traveller edition box",
+    className: "absolute left-[-4%] top-[2%] z-[1] h-[96%] w-[42%]",
+  },
+  {
+    src: "/assets/hero-box-2.png",
+    alt: "ICK DEATH Peace edition box",
+    className: "absolute left-[16%] top-[2.5%] z-[2] h-[96%] w-[42%]",
+  },
+  {
+    src: "/assets/hero-box-3.png",
+    alt: "ICK DEATH Beard edition box",
+    className: "absolute left-[38%] top-[3.5%] z-[3] h-[94%] w-[40%]",
+  },
+  {
+    src: "/assets/hero-box-4.png",
+    alt: "ICK DEATH Barbie edition box",
+    className: "absolute left-[58%] top-[3%] z-[4] h-[95%] w-[42%]",
+  },
+];
+
 const features = [
   {
     label: "NO TOUCH",
@@ -57,8 +80,8 @@ export function Hero() {
           />
         </div>
 
-        <div className="relative mx-auto flex min-h-[240px] items-center justify-center px-3 py-8 sm:min-h-[320px] sm:px-4 sm:py-12 md:min-h-[560px] md:px-8 md:py-16 lg:min-h-[720px]">
-          <div className="animate-glow-pulse pointer-events-none absolute left-1/2 top-1/2 size-[min(110vw,420px)] -translate-x-1/2 -translate-y-1/2 sm:size-[min(95vw,540px)] lg:size-[780px]">
+        <div className="relative mx-auto aspect-[1576/971] w-full max-w-[1576px]">
+          <div className="animate-glow-pulse pointer-events-none absolute left-[22.5%] top-[3.4%] z-0 h-[88%] w-[54.4%]">
             <AssetImage
               src="/assets/glow-ellipse.svg"
               alt=""
@@ -67,28 +90,18 @@ export function Hero() {
             />
           </div>
 
-          <div className="relative z-10 flex w-full max-w-6xl items-center justify-center">
-            <div className="relative h-[170px] w-[58%] overflow-hidden xs:h-[200px] sm:h-[260px] md:h-[440px] lg:h-[560px]">
+          {heroBoxes.map((box) => (
+            <div key={box.src} className={box.className}>
               <AssetImage
-                src="/assets/product-open.png"
-                alt="ICK DEATH open product box with seat safe tab"
+                src={box.src}
+                alt={box.alt}
                 fill
-                className="origin-center scale-[2.1] object-cover object-[48%_42%] sm:scale-[2.4]"
+                className="object-contain"
                 priority
-                sizes="(max-width: 640px) 70vw, (max-width: 768px) 60vw, 700px"
+                sizes="(max-width: 768px) 45vw, 30vw"
               />
             </div>
-            <div className="relative -ml-[12%] h-[185px] w-[52%] overflow-hidden sm:-ml-[10%] sm:h-[280px] md:h-[480px] lg:h-[600px]">
-              <AssetImage
-                src="/assets/product-closed.png"
-                alt="ICK DEATH product box"
-                fill
-                className="origin-center scale-[2] object-cover object-[52%_38%] sm:scale-[2.2]"
-                priority
-                sizes="(max-width: 640px) 65vw, (max-width: 768px) 55vw, 650px"
-              />
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
