@@ -1,4 +1,4 @@
-import { lineTotalPaise, PRODUCT } from "@/lib/product";
+import { lineTotalPaise, PRODUCT, productNameForColorway } from "@/lib/product";
 import {
   generateOrderId,
   type CheckoutDraft,
@@ -27,7 +27,7 @@ export function buildCustomerWhatsAppMessage(order: PlacedOrder): string {
   return [
     `Hi! I just placed order *${order.orderId}* on ickdeath.com.`,
     ``,
-    `*${PRODUCT.name}* × ${order.quantity}`,
+    `*${productNameForColorway(order.colorway)}* × ${order.quantity}`,
     `Amount: ₹${rupees}`,
     `Name: ${order.contact.name}`,
     `Phone: ${order.contact.phone}`,
@@ -54,7 +54,7 @@ async function postWebhook(order: PlacedOrder): Promise<void> {
       body: JSON.stringify({
         ...order,
         productId: PRODUCT.id,
-        productName: PRODUCT.name,
+        productName: productNameForColorway(order.colorway),
         source: "ickdeath-website",
       }),
       mode: "no-cors",

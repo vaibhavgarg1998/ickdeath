@@ -1,3 +1,5 @@
+import type { ColorwayId } from "@/lib/product";
+
 export type CheckoutContact = {
   name: string;
   phone: string;
@@ -14,6 +16,7 @@ export type CheckoutAddress = {
 
 export type CheckoutDraft = {
   quantity: number;
+  colorway: ColorwayId;
   contact: CheckoutContact;
   address: CheckoutAddress;
 };

@@ -1,3 +1,4 @@
+import { ChooseEdition } from "@/components/ChooseEdition";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
@@ -13,6 +14,7 @@ export default function Home() {
       <Header />
       <main className="pb-8 sm:pb-12">
         <Hero />
+        <ChooseEdition />
         <HowToUse />
         <WhatsInTheBox />
       </main>

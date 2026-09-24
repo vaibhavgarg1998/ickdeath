@@ -24,9 +24,9 @@ export function Footer() {
   return (
     <footer className="relative mt-8 overflow-hidden rounded-t-[28px] border-y-2 border-neon bg-black sm:mt-10 sm:rounded-t-[40px] md:rounded-t-[50px]">
       <div className="mx-auto flex w-full max-w-[1728px] flex-col items-center gap-8 px-4 py-12 sm:gap-10 sm:px-6 sm:py-16 md:flex-row md:justify-between md:px-10 lg:px-16 lg:py-24">
-        <div className="relative h-20 w-[112px] shrink-0 sm:h-[120px] sm:w-[170px] md:h-[160px] md:w-[220px] lg:h-[213px] lg:w-[298px]">
+        <div className="relative h-24 w-[111px] shrink-0 sm:h-32 sm:w-[148px] md:h-40 md:w-[185px] lg:h-48 lg:w-[222px]">
           <AssetImage
-            src="/assets/logo-footer.svg"
+            src="/assets/logo.png"
             alt="ICK DEATH"
             fill
             className="object-contain object-center md:object-left"

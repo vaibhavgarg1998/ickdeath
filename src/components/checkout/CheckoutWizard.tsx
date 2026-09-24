@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   clearCheckoutDraft,
   getCheckoutDraftServerSnapshot,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/checkout-storage";
 import { placeOrderWithRazorpay } from "@/lib/place-order";
 import { withBasePath } from "@/lib/paths";
+import { isColorwayId } from "@/lib/product";
 import { StepQuantity } from "@/components/checkout/StepQuantity";
 import { StepContact } from "@/components/checkout/StepContact";
 import { StepAddress } from "@/components/checkout/StepAddress";
@@ -36,6 +37,15 @@ export function CheckoutWizard() {
   const [step, setStep] = useState<StepId>("quantity");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const edition = params.get("edition");
+    if (!isColorwayId(edition)) return;
+    const current = getCheckoutDraftSnapshot();
+    if (current.colorway === edition) return;
+    saveCheckoutDraft({ ...current, colorway: edition });
+  }, []);
 
   function updateDraft(next: Parameters<typeof saveCheckoutDraft>[0]) {
     saveCheckoutDraft(next);

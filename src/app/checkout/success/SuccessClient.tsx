@@ -7,7 +7,7 @@ import {
   getPlacedOrderSnapshot,
   subscribePlacedOrder,
 } from "@/lib/checkout-storage";
-import { formatINR, PRODUCT } from "@/lib/product";
+import { formatINR, productNameForColorway } from "@/lib/product";
 import { customerWhatsAppUrl } from "@/lib/place-order";
 import { TRACK_PATH } from "@/lib/buy";
 
@@ -45,7 +45,7 @@ export function CheckoutSuccessClient() {
                 <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
                   <dt className="text-text-dim">Product</dt>
                   <dd>
-                    {PRODUCT.name} × {order.quantity}
+                    {productNameForColorway(order.colorway)} × {order.quantity}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
