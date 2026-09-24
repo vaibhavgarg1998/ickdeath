@@ -5,22 +5,22 @@ const heroBoxes = [
   {
     src: "/assets/hero-box-1.png",
     alt: "ICK DEATH Traveller edition box",
-    className: "absolute left-[-4%] top-[2%] z-[1] h-[96%] w-[42%]",
+    className: "absolute left-[2%] top-[3%] z-[1] h-[94%] w-[28.5%]",
   },
   {
     src: "/assets/hero-box-2.png",
     alt: "ICK DEATH Peace edition box",
-    className: "absolute left-[16%] top-[2.5%] z-[2] h-[96%] w-[42%]",
+    className: "absolute left-[24.5%] top-[3%] z-[2] h-[94%] w-[28.5%]",
   },
   {
     src: "/assets/hero-box-3.png",
     alt: "ICK DEATH Beard edition box",
-    className: "absolute left-[38%] top-[3.5%] z-[3] h-[94%] w-[40%]",
+    className: "absolute left-[47%] top-[3%] z-[3] h-[94%] w-[28.5%]",
   },
   {
     src: "/assets/hero-box-4.png",
     alt: "ICK DEATH Barbie edition box",
-    className: "absolute left-[58%] top-[3%] z-[4] h-[95%] w-[42%]",
+    className: "absolute left-[69.5%] top-[3%] z-[4] h-[94%] w-[28.5%]",
   },
 ];
 
