@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState, type PointerEvent } from "react";
 import { AssetImage } from "@/components/AssetImage";
 import type { CheckoutDraft } from "@/lib/orders";
 import {
@@ -48,25 +49,20 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
       </p>
 
       <div className="mt-3 flex gap-4 sm:gap-5">
-        <div
-          className="relative h-36 w-24 shrink-0 overflow-hidden bg-bg-stage sm:h-44 sm:w-28"
-          role="img"
-          aria-label={productNameForColorway(colorway.id)}
-        >
-          {COLORWAYS.map((option) => (
-            <AssetImage
-              key={option.id}
-              src={option.imageSrc}
-              alt=""
-              fill
-              priority
-              sizes="112px"
-              className={`object-contain p-1 ${
-                option.id === colorway.id ? "opacity-100" : "pointer-events-none opacity-0"
-              }`}
-            />
-          ))}
-        </div>
+        <ColorwaySlider
+          key={colorway.id}
+          label={productNameForColorway(colorway.id)}
+          slides={[
+            {
+              src: colorway.productSrc,
+              alt: `${colorway.name} edition tab`,
+            },
+            {
+              src: colorway.imageSrc,
+              alt: `${colorway.name} edition box`,
+            },
+          ]}
+        />
         <div className="min-w-0 flex-1">
           <p className="font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">
             Limited edition / {String(colorway.index).padStart(2, "0")}
@@ -157,6 +153,106 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
         >
           Continue
         </button>
+      </div>
+    </div>
+  );
+}
+
+type Slide = {
+  src: string;
+  alt: string;
+};
+
+function ColorwaySlider({
+  slides,
+  label,
+}: {
+  slides: readonly Slide[];
+  label: string;
+}) {
+  const [index, setIndex] = useState(0);
+  const startX = useRef<number | null>(null);
+  const count = slides.length;
+
+  function go(next: number) {
+    setIndex((next + count) % count);
+  }
+
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    startX.current = event.clientX;
+  }
+
+  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (startX.current == null) return;
+    const delta = event.clientX - startX.current;
+    startX.current = null;
+    if (delta > 40) go(index - 1);
+    else if (delta < -40) go(index + 1);
+  }
+
+  return (
+    <div
+      className="relative aspect-[2/3] w-32 shrink-0 overflow-hidden bg-bg-stage sm:w-36"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label={label}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={() => {
+        startX.current = null;
+      }}
+    >
+      {slides.map((slide, i) => (
+        <div
+          key={slide.src}
+          className="absolute inset-0 transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(${(i - index) * 100}%)` }}
+          aria-hidden={i !== index}
+        >
+          <AssetImage
+            src={slide.src}
+            alt={i === index ? slide.alt : ""}
+            fill
+            priority
+            sizes="144px"
+            className="object-cover"
+          />
+        </div>
+      ))}
+
+      <button
+        type="button"
+        aria-label="Previous image"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => go(index - 1)}
+        className="absolute left-1 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-sm leading-none text-white"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        aria-label="Next image"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => go(index + 1)}
+        className="absolute right-1 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-sm leading-none text-white"
+      >
+        ›
+      </button>
+
+      <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1.5">
+        {slides.map((slide, i) => (
+          <button
+            key={slide.src}
+            type="button"
+            aria-label={slide.alt}
+            aria-current={i === index ? "true" : undefined}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => setIndex(i)}
+            className={`size-1.5 rounded-full ${
+              i === index ? "bg-neon" : "bg-white/55"
+            }`}
+          />
+        ))}
       </div>
     </div>
   );

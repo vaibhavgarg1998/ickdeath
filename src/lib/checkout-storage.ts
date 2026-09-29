@@ -1,5 +1,5 @@
 import type { CheckoutDraft, PlacedOrder } from "@/lib/orders";
-import { DEFAULT_COLORWAY, isColorwayId } from "@/lib/product";
+import { DEFAULT_COLORWAY, isColorwayId, PRODUCT } from "@/lib/product";
 
 const DRAFT_KEY = "ickdeath_checkout_draft";
 const ORDER_KEY = "ickdeath_last_order";
@@ -18,9 +18,16 @@ export function emptyDraft(): CheckoutDraft {
 
 const SERVER_DRAFT = emptyDraft();
 
+function clampQuantity(value: unknown): number {
+  const qty = Number(value);
+  if (!Number.isInteger(qty)) return PRODUCT.minQty;
+  return Math.min(PRODUCT.maxQty, Math.max(PRODUCT.minQty, qty));
+}
+
 function normalizeDraft(draft: CheckoutDraft): CheckoutDraft {
   return {
     ...draft,
+    quantity: clampQuantity(draft.quantity),
     colorway: isColorwayId(draft.colorway) ? draft.colorway : DEFAULT_COLORWAY,
   };
 }
