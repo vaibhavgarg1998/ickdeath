@@ -30,7 +30,12 @@ export async function POST(request: Request) {
     const orderId = body.orderId?.trim();
     const quantity = Number(body.quantity);
 
-    if (!orderId || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
+    if (
+      !orderId ||
+      !Number.isInteger(quantity) ||
+      quantity < PRODUCT.minQty ||
+      quantity > PRODUCT.maxQty
+    ) {
       return NextResponse.json({ error: "Invalid order payload" }, { status: 400 });
     }
 
