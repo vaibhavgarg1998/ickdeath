@@ -30,8 +30,8 @@ export function HowToUse() {
       className="mx-auto w-full max-w-[1728px] border-t border-white/20 px-4 py-12 sm:px-6 sm:py-16 md:px-10 md:py-24 lg:px-16"
     >
       <h2 className="font-[family-name:var(--font-bebas)] text-[clamp(2rem,7vw,5.5rem)] leading-[1.05]">
-        <span className="text-white">MEET THE </span>
-        <span className="text-neon">&ldquo;SEAT SAFE TABS&rdquo;</span>
+        <span className="text-white">JOIN THE </span>
+        <span className="text-neon">&ldquo;NO TOUCH MOVEMENT&rdquo;</span>
       </h2>
       <p className="mt-4 max-w-5xl font-[family-name:var(--font-ibm-plex)] text-base font-bold leading-relaxed text-white sm:mt-6 sm:text-lg sm:leading-snug md:text-2xl lg:text-3xl">
         A tiny tab you stick on the toilet seat edge so you can lift it without

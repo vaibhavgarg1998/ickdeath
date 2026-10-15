@@ -46,6 +46,28 @@ export type EditionOrderStat = {
   revenuePaise: number;
 };
 
+export type CityOrderStat = {
+  city: string;
+  state: string;
+  orders: number;
+  revenuePaise: number;
+};
+
+export type RepeatCustomerStat = {
+  phone: string;
+  name: string;
+  orders: number;
+  revenuePaise: number;
+  lastOrderAt: string;
+};
+
+export type RepeatOrderSummary = {
+  uniqueCustomers: number;
+  repeatCustomers: number;
+  repeatOrderCount: number;
+  customers: RepeatCustomerStat[];
+};
+
 const TRACKED_IDS = new Set<string>(TRACKED_BUTTONS.map((b) => b.id));
 
 export function isTrackedButtonId(value: string): value is TrackedButtonId {
@@ -161,4 +183,99 @@ export function aggregateEditionStats(
       revenuePaise: bucket.revenuePaise,
     };
   }).sort((a, b) => b.units - a.units || b.orders - a.orders);
+}
+
+function activeOrders(orders: readonly OrderRecord[]): OrderRecord[] {
+  return orders.filter((order) => order.orderStatus !== "cancelled");
+}
+
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
+/** Aggregate order volume by city (+ state for disambiguation). */
+export function aggregateCityStats(
+  orders: readonly OrderRecord[],
+): CityOrderStat[] {
+  const byKey = new Map<
+    string,
+    { city: string; state: string; orders: number; revenuePaise: number }
+  >();
+
+  for (const order of activeOrders(orders)) {
+    const city = order.address?.city?.trim() || "Unknown";
+    const state = order.address?.state?.trim() || "";
+    const key = `${city.toLowerCase()}|${state.toLowerCase()}`;
+    const bucket = byKey.get(key) ?? {
+      city,
+      state,
+      orders: 0,
+      revenuePaise: 0,
+    };
+    bucket.orders += 1;
+    bucket.revenuePaise += order.amountPaise;
+    byKey.set(key, bucket);
+  }
+
+  return [...byKey.values()].sort(
+    (a, b) => b.orders - a.orders || b.revenuePaise - a.revenuePaise,
+  );
+}
+
+/**
+ * Customers with 2+ non-cancelled orders (matched by phone).
+ * `repeatOrderCount` = total orders from those customers (not just extras).
+ */
+export function aggregateRepeatOrders(
+  orders: readonly OrderRecord[],
+): RepeatOrderSummary {
+  const byPhone = new Map<
+    string,
+    {
+      phone: string;
+      name: string;
+      orders: number;
+      revenuePaise: number;
+      lastOrderAt: string;
+    }
+  >();
+
+  for (const order of activeOrders(orders)) {
+    const phone = normalizePhone(order.contact?.phone ?? "");
+    if (phone.length < 10) continue;
+
+    const createdAt = order.createdAt || "";
+    const existing = byPhone.get(phone);
+    if (!existing) {
+      byPhone.set(phone, {
+        phone,
+        name: order.contact?.name?.trim() || "Customer",
+        orders: 1,
+        revenuePaise: order.amountPaise,
+        lastOrderAt: createdAt,
+      });
+      continue;
+    }
+
+    existing.orders += 1;
+    existing.revenuePaise += order.amountPaise;
+    if (order.contact?.name?.trim()) existing.name = order.contact.name.trim();
+    if (createdAt > existing.lastOrderAt) existing.lastOrderAt = createdAt;
+  }
+
+  const customers = [...byPhone.values()]
+    .filter((row) => row.orders >= 2)
+    .sort(
+      (a, b) =>
+        b.orders - a.orders ||
+        b.revenuePaise - a.revenuePaise ||
+        b.lastOrderAt.localeCompare(a.lastOrderAt),
+    );
+
+  return {
+    uniqueCustomers: byPhone.size,
+    repeatCustomers: customers.length,
+    repeatOrderCount: customers.reduce((sum, row) => sum + row.orders, 0),
+    customers,
+  };
 }

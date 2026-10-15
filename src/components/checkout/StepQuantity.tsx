@@ -5,7 +5,6 @@ import { AssetImage } from "@/components/AssetImage";
 import type { CartLine, CheckoutDraft } from "@/lib/orders";
 import { PriceBreakdownPanel } from "@/components/checkout/form-ui";
 import {
-  cartTotalPaise,
   cartTotalQty,
   COLORWAYS,
   formatINR,
@@ -121,6 +120,10 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
           </p>
           <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-white">
             {formatINR(PRODUCT.unitPricePaise)} each
+            <span className="text-text-dim">
+              {" "}
+              + {formatINR(PRODUCT.deliveryPaisePerUnit)} delivery
+            </span>
           </p>
 
           <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">
@@ -192,7 +195,7 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
       </div>
 
       <PriceBreakdownPanel
-        totalPaise={cartTotalPaise(lines)}
+        quantity={cartTotalQty(lines)}
         className="mt-6 border-t border-white/10 pt-5"
       />
 
