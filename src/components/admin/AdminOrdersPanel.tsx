@@ -23,6 +23,8 @@ export function AdminOrdersPanel() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [whatsappNote, setWhatsappNote] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     if (!user || !configured) {
@@ -42,7 +44,12 @@ export function AdminOrdersPanel() {
     return unsub;
   }, [user, configured]);
 
-  const selected = orders.find((o) => o.orderId === selectedId) ?? null;
+  const filteredOrders = orders.filter((order) =>
+    orderMatchesDateRange(order.createdAt, dateFrom, dateTo),
+  );
+  const selected =
+    filteredOrders.find((o) => o.orderId === selectedId) ?? null;
+  const hasDateFilter = Boolean(dateFrom || dateTo);
 
   async function patchStatus(input: {
     orderStatus?: OrderStatus;
@@ -111,6 +118,48 @@ export function AdminOrdersPanel() {
         </p>
       ) : null}
 
+      <div className="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-bg-elevated p-4">
+        <label className="min-w-[140px] flex-1">
+          <span className="mb-1.5 block font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-wider text-text-dim">
+            From
+          </span>
+          <input
+            type="date"
+            value={dateFrom}
+            max={dateTo || undefined}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-full rounded-lg border border-white/15 bg-bg px-3 py-2.5 font-[family-name:var(--font-ibm-plex)] text-sm text-white outline-none focus:border-neon [color-scheme:dark]"
+          />
+        </label>
+        <label className="min-w-[140px] flex-1">
+          <span className="mb-1.5 block font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-wider text-text-dim">
+            To
+          </span>
+          <input
+            type="date"
+            value={dateTo}
+            min={dateFrom || undefined}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-full rounded-lg border border-white/15 bg-bg px-3 py-2.5 font-[family-name:var(--font-ibm-plex)] text-sm text-white outline-none focus:border-neon [color-scheme:dark]"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={!hasDateFilter}
+          onClick={() => {
+            setDateFrom("");
+            setDateTo("");
+          }}
+          className="h-[42px] border border-white/20 px-4 font-[family-name:var(--font-anton)] text-xs uppercase tracking-wider text-text-dim hover:text-white disabled:opacity-40"
+        >
+          Clear
+        </button>
+        <p className="w-full font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim sm:ml-auto sm:w-auto">
+          Showing {filteredOrders.length}
+          {hasDateFilter ? ` of ${orders.length}` : ""} orders
+        </p>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="overflow-hidden rounded-xl border border-white/10">
           <div className="overflow-x-auto">
@@ -124,17 +173,19 @@ export function AdminOrdersPanel() {
                 </tr>
               </thead>
               <tbody>
-                {orders.length === 0 ? (
+                {filteredOrders.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
                       className="px-3 py-8 text-center text-text-dim"
                     >
-                      No orders yet.
+                      {orders.length === 0
+                        ? "No orders yet."
+                        : "No orders in this date range."}
                     </td>
                   </tr>
                 ) : null}
-                {orders.map((order) => {
+                {filteredOrders.map((order) => {
                   const active = order.orderId === selectedId;
                   return (
                     <tr
@@ -194,6 +245,27 @@ export function AdminOrdersPanel() {
       </div>
     </div>
   );
+}
+
+/** Match `createdAt` against local YYYY-MM-DD from/to inputs (inclusive). */
+function orderMatchesDateRange(
+  createdAt: string,
+  dateFrom: string,
+  dateTo: string,
+): boolean {
+  if (!dateFrom && !dateTo) return true;
+  const created = new Date(createdAt);
+  if (Number.isNaN(created.getTime())) return false;
+
+  if (dateFrom) {
+    const from = new Date(`${dateFrom}T00:00:00`);
+    if (created < from) return false;
+  }
+  if (dateTo) {
+    const to = new Date(`${dateTo}T23:59:59.999`);
+    if (created > to) return false;
+  }
+  return true;
 }
 
 function OrderDetail({

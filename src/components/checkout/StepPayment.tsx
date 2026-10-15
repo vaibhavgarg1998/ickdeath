@@ -2,7 +2,7 @@
 
 import type { CheckoutDraft } from "@/lib/orders";
 import { PriceBreakdownPanel } from "@/components/checkout/form-ui";
-import { cartTotalPaise, formatINR } from "@/lib/product";
+import { cartTotalPaise, cartTotalQty, formatINR } from "@/lib/product";
 
 type Props = {
   draft: CheckoutDraft;
@@ -32,7 +32,10 @@ export function StepPayment({
         You&apos;ll get tracking updates on WhatsApp after the order is placed.
       </p>
 
-      <PriceBreakdownPanel totalPaise={total} className="mt-6" />
+      <PriceBreakdownPanel
+        quantity={cartTotalQty(draft.lines)}
+        className="mt-6"
+      />
 
       <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-[0.16em] text-text-dim">
         Payment partner <span className="text-white">Razorpay</span>

@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { isValidPincode, type CheckoutDraft } from "@/lib/orders";
-import { Field, NavRow } from "@/components/checkout/form-ui";
+import {
+  citiesForState,
+  INDIA_STATES,
+  isValidCityForState,
+  isValidState,
+} from "@/lib/india-locations";
+import { Field, NavRow, SelectField } from "@/components/checkout/form-ui";
 
 type Props = {
   draft: CheckoutDraft;
@@ -14,8 +20,21 @@ type Props = {
 export function StepAddress({ draft, onChange, onBack, onNext }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const cities = useMemo(
+    () => citiesForState(draft.address.state),
+    [draft.address.state],
+  );
+
   function setAddress(partial: Partial<CheckoutDraft["address"]>) {
     onChange({ ...draft, address: { ...draft.address, ...partial } });
+  }
+
+  function onStateChange(state: string) {
+    const nextCity =
+      draft.address.city && isValidCityForState(state, draft.address.city)
+        ? draft.address.city
+        : "";
+    setAddress({ state, city: nextCity });
   }
 
   function validateAndNext() {
@@ -23,8 +42,10 @@ export function StepAddress({ draft, onChange, onBack, onNext }: Props) {
     const next: Record<string, string> = {};
     if (!a.line1.trim()) next.line1 = "Address is required";
     if (!isValidPincode(a.pincode)) next.pincode = "Enter a valid 6-digit pincode";
-    if (!a.city.trim()) next.city = "City is required";
-    if (!a.state.trim()) next.state = "State is required";
+    if (!isValidState(a.state)) next.state = "Select a state";
+    if (!isValidCityForState(a.state, a.city)) {
+      next.city = a.state ? "Select a city" : "Select a state first";
+    }
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -52,16 +73,6 @@ export function StepAddress({ draft, onChange, onBack, onNext }: Props) {
 
       <div className="mt-6 space-y-4">
         <Field
-          label="Pincode"
-          id="pincode"
-          inputMode="numeric"
-          autoComplete="postal-code"
-          placeholder="560001"
-          value={draft.address.pincode}
-          error={errors.pincode}
-          onChange={(v) => setAddress({ pincode: v.replace(/\D/g, "").slice(0, 6) })}
-        />
-        <Field
           label="Address line 1"
           id="line1"
           autoComplete="address-line1"
@@ -79,23 +90,42 @@ export function StepAddress({ draft, onChange, onBack, onNext }: Props) {
           onChange={(v) => setAddress({ line2: v })}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label="City"
-            id="city"
-            autoComplete="address-level2"
-            value={draft.address.city}
-            error={errors.city}
-            onChange={(v) => setAddress({ city: v })}
-          />
-          <Field
+          <SelectField
             label="State"
             id="state"
             autoComplete="address-level1"
+            placeholder="Select state"
+            options={INDIA_STATES}
             value={draft.address.state}
             error={errors.state}
-            onChange={(v) => setAddress({ state: v })}
+            onChange={onStateChange}
+          />
+          <SelectField
+            label="City"
+            id="city"
+            autoComplete="address-level2"
+            placeholder={
+              draft.address.state ? "Select city" : "Select state first"
+            }
+            options={cities}
+            value={draft.address.city}
+            error={errors.city}
+            disabled={!draft.address.state}
+            onChange={(city) => setAddress({ city })}
           />
         </div>
+        <Field
+          label="Pincode"
+          id="pincode"
+          inputMode="numeric"
+          autoComplete="postal-code"
+          placeholder="560001"
+          value={draft.address.pincode}
+          error={errors.pincode}
+          onChange={(v) =>
+            setAddress({ pincode: v.replace(/\D/g, "").slice(0, 6) })
+          }
+        />
       </div>
 
       <NavRow onBack={onBack} onNext={validateAndNext} />

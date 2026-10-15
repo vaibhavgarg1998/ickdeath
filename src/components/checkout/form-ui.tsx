@@ -2,6 +2,7 @@
 
 import type { HTMLAttributes } from "react";
 import {
+  formatINR,
   formatINRExact,
   priceBreakdown,
   PRODUCT,
@@ -18,6 +19,11 @@ type FieldProps = {
   autoComplete?: string;
   placeholder?: string;
 };
+
+const fieldClassName = (error?: string) =>
+  `w-full rounded-lg border bg-bg px-3.5 py-3 font-[family-name:var(--font-inter)] text-sm text-white outline-none placeholder:text-white/30 focus:border-neon disabled:cursor-not-allowed disabled:opacity-50 ${
+    error ? "border-red-400" : "border-white/15"
+  }`;
 
 export function Field({
   id,
@@ -46,10 +52,68 @@ export function Field({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full rounded-lg border bg-bg px-3.5 py-3 font-[family-name:var(--font-inter)] text-sm text-white outline-none placeholder:text-white/30 focus:border-neon ${
-          error ? "border-red-400" : "border-white/15"
-        }`}
+        className={fieldClassName(error)}
       />
+      {error ? (
+        <p className="mt-1 font-[family-name:var(--font-ibm-plex)] text-xs text-red-400">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+type SelectFieldProps = {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  error?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  autoComplete?: string;
+};
+
+export function SelectField({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  error,
+  placeholder = "Select",
+  disabled,
+  autoComplete,
+}: SelectFieldProps) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="mb-1.5 block font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-wider text-text-dim"
+      >
+        {label}
+      </label>
+      <select
+        id={id}
+        value={value}
+        disabled={disabled}
+        autoComplete={autoComplete}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${fieldClassName(error)} appearance-none bg-[length:1rem] bg-[right_0.75rem_center] bg-no-repeat pr-10`}
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+        }}
+      >
+        <option value="" className="bg-bg text-text-dim">
+          {placeholder}
+        </option>
+        {options.map((option) => (
+          <option key={option} value={option} className="bg-bg text-white">
+            {option}
+          </option>
+        ))}
+      </select>
       {error ? (
         <p className="mt-1 font-[family-name:var(--font-ibm-plex)] text-xs text-red-400">
           {error}
@@ -90,15 +154,16 @@ export function NavRow({
   );
 }
 
-/** Inclusive-price split: Product Price / GST / Total Price. */
+/** Product / GST / delivery / total. */
 export function PriceBreakdownPanel({
-  totalPaise,
+  quantity,
   className = "",
 }: {
-  totalPaise: number;
+  quantity: number;
   className?: string;
 }) {
-  const { basePaise, gstPaise, totalPaise: total } = priceBreakdown(totalPaise);
+  const { basePaise, gstPaise, deliveryPaise, totalPaise } =
+    priceBreakdown(quantity);
 
   return (
     <dl
@@ -116,10 +181,18 @@ export function PriceBreakdownPanel({
           {formatINRExact(gstPaise)}
         </dd>
       </div>
+      <div className="flex items-baseline justify-between gap-4">
+        <dt className="text-text-dim">
+          Delivery ({formatINR(PRODUCT.deliveryPaisePerUnit)} / unit)
+        </dt>
+        <dd className="tabular-nums text-text-soft">
+          {formatINRExact(deliveryPaise)}
+        </dd>
+      </div>
       <div className="flex items-baseline justify-between gap-4 border-t border-white/10 pt-2">
         <dt className="text-white">Total Price</dt>
         <dd className="tabular-nums font-medium text-neon">
-          {formatINRExact(total)}
+          {formatINRExact(totalPaise)}
         </dd>
       </div>
     </dl>

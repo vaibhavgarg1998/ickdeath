@@ -6,6 +6,8 @@ export const PRODUCT = {
   description: "1× Lifter · 2× Alcohol Wipes · 1× Gloves",
   /** Inclusive price in INR paise (59900 = ₹599 incl. GST). */
   unitPricePaise: 59900,
+  /** Flat delivery charge per pack in paise (5000 = ₹50). */
+  deliveryPaisePerUnit: 5000,
   /** GST rate baked into unitPricePaise (18% → base ≈ ₹507.63). */
   gstRatePercent: 18,
   currency: "INR" as const,
@@ -91,20 +93,30 @@ export function formatINRExact(paise: number): string {
 }
 
 export type PriceBreakdown = {
+  /** Taxable product value (excl. GST). */
   basePaise: number;
   gstPaise: number;
+  /** Product total incl. GST (excl. delivery). */
+  productPaise: number;
+  deliveryPaise: number;
+  /** Product + delivery. */
   totalPaise: number;
 };
 
-/** Split an inclusive total into taxable value + GST (sums exactly). */
-export function priceBreakdown(totalPaise: number): PriceBreakdown {
+/** Product + GST + delivery breakdown for a quantity. */
+export function priceBreakdown(quantity: number): PriceBreakdown {
+  const qty = Math.max(0, Math.floor(quantity));
+  const productPaise = lineTotalPaise(qty);
   const basePaise = Math.round(
-    totalPaise / (1 + PRODUCT.gstRatePercent / 100),
+    productPaise / (1 + PRODUCT.gstRatePercent / 100),
   );
+  const deliveryPaise = deliveryTotalPaise(qty);
   return {
     basePaise,
-    gstPaise: totalPaise - basePaise,
-    totalPaise,
+    gstPaise: productPaise - basePaise,
+    productPaise,
+    deliveryPaise,
+    totalPaise: productPaise + deliveryPaise,
   };
 }
 
@@ -112,12 +124,17 @@ export function lineTotalPaise(quantity: number): number {
   return PRODUCT.unitPricePaise * quantity;
 }
 
+export function deliveryTotalPaise(quantity: number): number {
+  return PRODUCT.deliveryPaisePerUnit * Math.max(0, Math.floor(quantity));
+}
+
 export function cartTotalQty(lines: readonly CartLine[]): number {
   return lines.reduce((sum, line) => sum + line.quantity, 0);
 }
 
+/** Product (incl. GST) + delivery for all cart lines. */
 export function cartTotalPaise(lines: readonly CartLine[]): number {
-  return lineTotalPaise(cartTotalQty(lines));
+  return priceBreakdown(cartTotalQty(lines)).totalPaise;
 }
 
 export function formatCartLines(lines: readonly CartLine[]): string {

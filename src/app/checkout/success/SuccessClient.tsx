@@ -48,7 +48,7 @@ export function CheckoutSuccessClient() {
                   <dd>{formatOrderItems(order)}</dd>
                 </div>
                 <div className="border-b border-white/10 pb-3">
-                  <PriceBreakdownPanel totalPaise={order.amountPaise} />
+                  <PriceBreakdownPanel quantity={order.quantity} />
                 </div>
                 <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
                   <dt className="text-text-dim">Payment</dt>
