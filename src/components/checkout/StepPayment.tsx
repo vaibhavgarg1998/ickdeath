@@ -1,7 +1,8 @@
 "use client";
 
 import type { CheckoutDraft } from "@/lib/orders";
-import { formatINR, lineTotalPaise } from "@/lib/product";
+import { PriceBreakdownPanel } from "@/components/checkout/form-ui";
+import { cartTotalPaise, formatINR } from "@/lib/product";
 
 type Props = {
   draft: CheckoutDraft;
@@ -18,7 +19,7 @@ export function StepPayment({
   submitting,
   error,
 }: Props) {
-  const total = lineTotalPaise(draft.quantity);
+  const total = cartTotalPaise(draft.lines);
   const cta = submitting ? "Opening Razorpay…" : `Pay ${formatINR(total)}`;
 
   return (
@@ -27,11 +28,12 @@ export function StepPayment({
         Payment
       </h2>
       <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
-        Amount due:{" "}
-        <span className="text-neon">{formatINR(total)}</span>. Pay securely
-        with UPI, cards, netbanking, or wallets via Razorpay. You&apos;ll get
-        tracking updates on WhatsApp after the order is placed.
+        Pay securely with UPI, cards, netbanking, or wallets via Razorpay.
+        You&apos;ll get tracking updates on WhatsApp after the order is placed.
       </p>
+
+      <PriceBreakdownPanel totalPaise={total} className="mt-6" />
+
       <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-[0.16em] text-text-dim">
         Payment partner <span className="text-white">Razorpay</span>
       </p>

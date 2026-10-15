@@ -8,5 +8,8 @@ export const CHECKOUT_PATH = "/checkout/";
 /** Guest order tracking by order ID or mobile number. */
 export const TRACK_PATH = "/track/";
 
+/** Terms of use and privacy policy. */
+export const TERMS_PATH = "/terms/";
+
 /** @deprecated Use AMAZON_URL / FLIPKART_URL via the buy modal */
 export const BUY_URL = AMAZON_URL;

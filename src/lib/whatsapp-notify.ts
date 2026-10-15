@@ -4,7 +4,7 @@ import {
   type PlacedOrder,
   type WhatsAppOrderEvent,
 } from "@/lib/orders";
-import { productNameForColorway } from "@/lib/product";
+import { formatOrderItems } from "@/lib/product";
 import {
   isFirebaseAdminConfigured,
   recordWhatsAppOnOrderAdmin,
@@ -44,7 +44,7 @@ function amountForTemplate(paise: number): string {
 
 function bodyParamsForEvent(order: PlacedOrder, event: WhatsAppOrderEvent): string[] {
   const name = firstName(order.contact.name);
-  const qtyLine = `${order.quantity}x ${productNameForColorway(order.colorway)}`;
+  const qtyLine = formatOrderItems(order);
   const amount = amountForTemplate(order.amountPaise);
 
   switch (event) {

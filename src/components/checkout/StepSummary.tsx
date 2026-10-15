@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 import type { CheckoutDraft } from "@/lib/orders";
-import { formatINR, lineTotalPaise, productNameForColorway } from "@/lib/product";
-import { NavRow } from "@/components/checkout/form-ui";
+import { cartTotalPaise, formatCartLines } from "@/lib/product";
+import { NavRow, PriceBreakdownPanel } from "@/components/checkout/form-ui";
 
 type Props = {
   draft: CheckoutDraft;
@@ -12,7 +12,7 @@ type Props = {
 };
 
 export function StepSummary({ draft, onBack, onNext }: Props) {
-  const total = lineTotalPaise(draft.quantity);
+  const total = cartTotalPaise(draft.lines);
   const addr = draft.address;
 
   return (
@@ -25,9 +25,7 @@ export function StepSummary({ draft, onBack, onNext }: Props) {
       </p>
 
       <dl className="mt-6 space-y-4 font-[family-name:var(--font-ibm-plex)] text-sm">
-        <Row label="Product">
-          {productNameForColorway(draft.colorway)} × {draft.quantity}
-        </Row>
+        <Row label="Product">{formatCartLines(draft.lines)}</Row>
         <Row label="Contact">
           {draft.contact.name}
           <br />
@@ -50,24 +48,15 @@ export function StepSummary({ draft, onBack, onNext }: Props) {
           <br />
           {addr.city}, {addr.state} {addr.pincode}
         </Row>
-        <Row label="Subtotal">
-          <span className="text-neon">{formatINR(total)}</span>
-        </Row>
         <Row label="Shipping">
           <span className="text-text-dim">Calculated at dispatch (WhatsApp)</span>
         </Row>
       </dl>
 
-      <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-5">
-        <div>
-          <p className="font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-wider text-text-dim">
-            Total due
-          </p>
-          <p className="font-[family-name:var(--font-bebas)] text-3xl text-neon">
-            {formatINR(total)}
-          </p>
-        </div>
-      </div>
+      <PriceBreakdownPanel
+        totalPaise={total}
+        className="mt-6 border-t border-white/10 pt-5"
+      />
 
       <NavRow onBack={onBack} onNext={onNext} nextLabel="Continue to payment" />
     </div>

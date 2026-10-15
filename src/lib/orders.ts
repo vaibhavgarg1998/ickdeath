@@ -1,4 +1,10 @@
-import type { ColorwayId } from "@/lib/product";
+import {
+  formatOrderItems,
+  type CartLine,
+  type ColorwayId,
+} from "@/lib/product";
+
+export type { CartLine };
 
 export type CheckoutContact = {
   name: string;
@@ -15,7 +21,11 @@ export type CheckoutAddress = {
 };
 
 export type CheckoutDraft = {
+  /** Selected editions with per-colorway quantities. */
+  lines: CartLine[];
+  /** Total packs across all lines (kept in sync for payment + legacy). */
   quantity: number;
+  /** Focused / primary colorway for preview + deep links. */
   colorway: ColorwayId;
   contact: CheckoutContact;
   address: CheckoutAddress;
@@ -242,6 +252,8 @@ export function toPublicTrackedOrder(data: {
   createdAt?: unknown;
   productName?: unknown;
   quantity?: unknown;
+  colorway?: unknown;
+  lines?: CartLine[] | null;
   amountPaise?: unknown;
   paymentMethod?: unknown;
   paymentStatus?: unknown;
@@ -253,11 +265,19 @@ export function toPublicTrackedOrder(data: {
     pincode?: unknown;
   } | null;
 }): PublicTrackedOrder {
+  const quantity = Number(data.quantity ?? 1);
+  const productName = formatOrderItems({
+    lines: data.lines,
+    colorway: data.colorway,
+    quantity,
+    productName: String(data.productName ?? ""),
+  });
+
   return {
     orderId: String(data.orderId ?? ""),
     createdAt: String(data.createdAt ?? ""),
-    productName: String(data.productName ?? ""),
-    quantity: Number(data.quantity ?? 1),
+    productName,
+    quantity,
     amountPaise: Number(data.amountPaise ?? 0),
     paymentMethod: asPaymentMethod(data.paymentMethod),
     paymentStatus: asPaymentStatus(data.paymentStatus),

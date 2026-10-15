@@ -1,6 +1,11 @@
 "use client";
 
 import type { HTMLAttributes } from "react";
+import {
+  formatINRExact,
+  priceBreakdown,
+  PRODUCT,
+} from "@/lib/product";
 
 type FieldProps = {
   id: string;
@@ -82,5 +87,41 @@ export function NavRow({
         {nextLabel}
       </button>
     </div>
+  );
+}
+
+/** Inclusive-price split: Product Price / GST / Total Price. */
+export function PriceBreakdownPanel({
+  totalPaise,
+  className = "",
+}: {
+  totalPaise: number;
+  className?: string;
+}) {
+  const { basePaise, gstPaise, totalPaise: total } = priceBreakdown(totalPaise);
+
+  return (
+    <dl
+      className={`space-y-2 font-[family-name:var(--font-ibm-plex)] text-sm ${className}`}
+    >
+      <div className="flex items-baseline justify-between gap-4">
+        <dt className="text-text-dim">Product Price</dt>
+        <dd className="tabular-nums text-text-soft">
+          {formatINRExact(basePaise)}
+        </dd>
+      </div>
+      <div className="flex items-baseline justify-between gap-4">
+        <dt className="text-text-dim">GST ({PRODUCT.gstRatePercent}%)</dt>
+        <dd className="tabular-nums text-text-soft">
+          {formatINRExact(gstPaise)}
+        </dd>
+      </div>
+      <div className="flex items-baseline justify-between gap-4 border-t border-white/10 pt-2">
+        <dt className="text-white">Total Price</dt>
+        <dd className="tabular-nums font-medium text-neon">
+          {formatINRExact(total)}
+        </dd>
+      </div>
+    </dl>
   );
 }

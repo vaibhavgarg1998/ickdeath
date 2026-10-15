@@ -1,4 +1,9 @@
-import { lineTotalPaise, PRODUCT, productNameForColorway } from "@/lib/product";
+import {
+  cartTotalPaise,
+  cartTotalQty,
+  formatOrderItems,
+  PRODUCT,
+} from "@/lib/product";
 import {
   generateOrderId,
   type CheckoutDraft,
@@ -27,7 +32,7 @@ export function buildCustomerWhatsAppMessage(order: PlacedOrder): string {
   return [
     `Hi! I just placed order *${order.orderId}* on ickdeath.com.`,
     ``,
-    `*${productNameForColorway(order.colorway)}* × ${order.quantity}`,
+    `*${formatOrderItems(order)}*`,
     `Amount: ₹${rupees}`,
     `Name: ${order.contact.name}`,
     `Phone: ${order.contact.phone}`,
@@ -54,7 +59,7 @@ async function postWebhook(order: PlacedOrder): Promise<void> {
       body: JSON.stringify({
         ...order,
         productId: PRODUCT.id,
-        productName: productNameForColorway(order.colorway),
+        productName: formatOrderItems(order),
         source: "ickdeath-website",
       }),
       mode: "no-cors",
@@ -65,11 +70,14 @@ async function postWebhook(order: PlacedOrder): Promise<void> {
 }
 
 function buildPendingOrder(draft: CheckoutDraft): PlacedOrder {
+  const quantity = cartTotalQty(draft.lines);
   return {
     ...draft,
+    quantity,
+    colorway: draft.lines[0]?.colorway ?? draft.colorway,
     orderId: generateOrderId(),
     createdAt: new Date().toISOString(),
-    amountPaise: lineTotalPaise(draft.quantity),
+    amountPaise: cartTotalPaise(draft.lines),
     paymentMethod: "razorpay",
     paymentStatus: "pending",
     orderStatus: "confirmed",

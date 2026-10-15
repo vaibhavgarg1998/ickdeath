@@ -80,6 +80,7 @@ export async function createRazorpayOrder(input: {
       orderId: input.orderId,
       quantity: input.draft.quantity,
       colorway: input.draft.colorway,
+      lines: input.draft.lines,
       customerName: input.draft.contact.name,
       customerEmail: input.draft.contact.email,
       customerPhone: input.draft.contact.phone,

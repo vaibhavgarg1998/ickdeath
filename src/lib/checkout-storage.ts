@@ -1,7 +1,13 @@
 import type { CheckoutDraft, PlacedOrder } from "@/lib/orders";
-import { DEFAULT_COLORWAY, isColorwayId, PRODUCT } from "@/lib/product";
+import {
+  cartTotalQty,
+  DEFAULT_COLORWAY,
+  isColorwayId,
+  normalizeCartLines,
+} from "@/lib/product";
 
-const DRAFT_KEY = "ickdeath_checkout_draft";
+/** Bump when draft shape / defaults change so stale carts don't stick. */
+const DRAFT_KEY = "ickdeath_checkout_draft_v2";
 const ORDER_KEY = "ickdeath_last_order";
 
 const draftListeners = new Set<() => void>();
@@ -9,7 +15,8 @@ const orderListeners = new Set<() => void>();
 
 export function emptyDraft(): CheckoutDraft {
   return {
-    quantity: 1,
+    lines: [],
+    quantity: 0,
     colorway: DEFAULT_COLORWAY,
     contact: { name: "", phone: "", email: "" },
     address: { line1: "", line2: "", pincode: "", city: "", state: "" },
@@ -18,17 +25,15 @@ export function emptyDraft(): CheckoutDraft {
 
 const SERVER_DRAFT = emptyDraft();
 
-function clampQuantity(value: unknown): number {
-  const qty = Number(value);
-  if (!Number.isInteger(qty)) return PRODUCT.minQty;
-  return Math.min(PRODUCT.maxQty, Math.max(PRODUCT.minQty, qty));
-}
-
 function normalizeDraft(draft: CheckoutDraft): CheckoutDraft {
+  const lines = normalizeCartLines(draft.lines, draft.colorway, draft.quantity);
   return {
     ...draft,
-    quantity: clampQuantity(draft.quantity),
-    colorway: isColorwayId(draft.colorway) ? draft.colorway : DEFAULT_COLORWAY,
+    lines,
+    quantity: cartTotalQty(lines),
+    colorway: isColorwayId(draft.colorway)
+      ? draft.colorway
+      : (lines[0]?.colorway ?? DEFAULT_COLORWAY),
   };
 }
 
@@ -80,7 +85,7 @@ export function getCheckoutDraftServerSnapshot(): CheckoutDraft {
 }
 
 export function saveCheckoutDraft(draft: CheckoutDraft): void {
-  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(normalizeDraft(draft)));
   draftCacheRaw = undefined;
   draftListeners.forEach((l) => l());
 }

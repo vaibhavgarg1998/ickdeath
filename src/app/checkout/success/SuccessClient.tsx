@@ -7,7 +7,8 @@ import {
   getPlacedOrderSnapshot,
   subscribePlacedOrder,
 } from "@/lib/checkout-storage";
-import { formatINR, productNameForColorway } from "@/lib/product";
+import { PriceBreakdownPanel } from "@/components/checkout/form-ui";
+import { formatOrderItems } from "@/lib/product";
 import { customerWhatsAppUrl } from "@/lib/place-order";
 import { TRACK_PATH } from "@/lib/buy";
 
@@ -44,13 +45,10 @@ export function CheckoutSuccessClient() {
               <dl className="mt-8 space-y-3 font-[family-name:var(--font-ibm-plex)] text-sm text-text-soft">
                 <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
                   <dt className="text-text-dim">Product</dt>
-                  <dd>
-                    {productNameForColorway(order.colorway)} × {order.quantity}
-                  </dd>
+                  <dd>{formatOrderItems(order)}</dd>
                 </div>
-                <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
-                  <dt className="text-text-dim">Amount</dt>
-                  <dd className="text-neon">{formatINR(order.amountPaise)}</dd>
+                <div className="border-b border-white/10 pb-3">
+                  <PriceBreakdownPanel totalPaise={order.amountPaise} />
                 </div>
                 <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
                   <dt className="text-text-dim">Payment</dt>

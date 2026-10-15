@@ -2,15 +2,32 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AssetImage } from "@/components/AssetImage";
 import { BuyNowButton } from "@/components/BuyNowButton";
+import { Logo } from "@/components/Logo";
+import { trackButtonClick, type TrackedButtonId } from "@/lib/analytics";
 import { TRACK_PATH } from "@/lib/buy";
 import { withBasePath } from "@/lib/paths";
 
-const links = [
-  { href: `${withBasePath("/")}#product`, label: "Product" },
-  { href: `${withBasePath("/")}#how-to-use`, label: "How to use" },
-  { href: TRACK_PATH, label: "Track order" },
+const links: {
+  href: string;
+  label: string;
+  trackId: TrackedButtonId;
+}[] = [
+  {
+    href: `${withBasePath("/")}#product`,
+    label: "Product",
+    trackId: "nav_product",
+  },
+  {
+    href: `${withBasePath("/")}#how-to-use`,
+    label: "How to use",
+    trackId: "nav_how_to_use",
+  },
+  {
+    href: TRACK_PATH,
+    label: "Track order",
+    trackId: "nav_track_order",
+  },
 ];
 
 export function Header() {
@@ -41,25 +58,20 @@ export function Header() {
       <div className="mx-auto flex w-full max-w-[1728px] items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 md:px-10 lg:px-16 lg:py-5">
         <Link
           href="/"
-          className="relative h-12 w-[55px] shrink-0 sm:h-16 sm:w-[74px] md:h-20 md:w-[92px] lg:h-24 lg:w-[111px]"
+          className="relative block size-12 shrink-0 sm:size-16 md:size-20 lg:size-24"
           onClick={closeMenu}
         >
-          <AssetImage
-            src="/assets/logo.png"
-            alt="ICK DEATH"
-            fill
-            className="object-contain object-left"
-            priority
-          />
+          <Logo className="size-full" />
         </Link>
 
-        <nav className="hidden items-center gap-8 font-[family-name:var(--font-inter)] text-base font-medium text-text-soft md:flex lg:gap-16 lg:text-2xl">
+        <nav className="hidden items-center gap-8 font-[family-name:var(--font-inter)] text-base font-medium text-text-soft md:flex lg:gap-12 lg:text-lg">
           {links.map((link) =>
             link.href === TRACK_PATH ? (
               <Link
                 key={link.href}
                 href={link.href}
                 className="transition-colors hover:text-neon"
+                onClick={() => trackButtonClick(link.trackId)}
               >
                 {link.label}
               </Link>
@@ -68,6 +80,7 @@ export function Header() {
                 key={link.href}
                 href={link.href}
                 className="transition-colors hover:text-neon"
+                onClick={() => trackButtonClick(link.trackId)}
               >
                 {link.label}
               </a>
@@ -76,7 +89,10 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <BuyNowButton className="inline-flex h-10 items-center justify-center bg-neon px-3.5 font-[family-name:var(--font-anton)] text-xs uppercase tracking-[0.16em] text-bg-elevated transition-opacity hover:opacity-90 sm:h-11 sm:px-5 sm:text-sm md:h-[66px] md:min-w-[180px] md:px-8 md:text-[28px] lg:min-w-[255px] lg:text-[30px]">
+          <BuyNowButton
+            trackId="header_buy_now"
+            className="inline-flex h-10 items-center justify-center bg-neon px-3.5 font-[family-name:var(--font-anton)] text-xs uppercase tracking-[0.08em] text-bg-elevated transition-opacity hover:opacity-90 sm:h-11 sm:px-5 sm:text-sm md:h-14 md:min-w-[160px] md:px-6 md:text-xl lg:min-w-[200px] lg:text-2xl"
+          >
             Buy Now
           </BuyNowButton>
 
@@ -121,7 +137,10 @@ export function Header() {
                   key={link.href}
                   href={link.href}
                   className="border-b border-white/10 py-3.5 transition-colors hover:text-neon"
-                  onClick={closeMenu}
+                  onClick={() => {
+                    trackButtonClick(link.trackId);
+                    closeMenu();
+                  }}
                 >
                   {link.label}
                 </Link>
@@ -130,7 +149,10 @@ export function Header() {
                   key={link.href}
                   href={link.href}
                   className="border-b border-white/10 py-3.5 transition-colors hover:text-neon"
-                  onClick={closeMenu}
+                  onClick={() => {
+                    trackButtonClick(link.trackId);
+                    closeMenu();
+                  }}
                 >
                   {link.label}
                 </a>
