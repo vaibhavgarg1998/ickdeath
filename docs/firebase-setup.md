@@ -33,13 +33,15 @@ NEXT_PUBLIC_ORDERS_WEBHOOK_URL=
 
 - Customers: **Buy Now** → `/checkout/` → order is written to Firestore `orders/{orderId}`
 - Customers: **Track order** → `/track/` → lookup by order ID or mobile number
-- Admin: open `/admin/` → sign in → list orders → change **Order status** / **Payment status** (status changes send WhatsApp when Cloud API is configured — `docs/whatsapp-setup.md`)
+- Admin: open `/admin/` → sign in → **Orders** (fulfillment) or **Analytics** (edition popularity + button clicks)
+- Status changes send WhatsApp when Cloud API is configured — `docs/whatsapp-setup.md`
 
 After changing `firestore.rules`, paste them into Firestore → Rules → Publish. Guest tracking needs:
 
 - `allow get` on `orders/{orderId}` (track by order ID)
 - `allow list` when `contact.phone` is at least 10 characters (track by mobile number)
-- Republish after this change or mobile lookup will keep failing
+- `analytics/{docId}` create/update for guests (button click counters); read for signed-in admins
+- Republish after this change or mobile lookup / analytics will keep failing
 
 ## 4. Notes
 

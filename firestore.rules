@@ -35,5 +35,12 @@ service cloud.firestore {
       allow get, list: if true;
       allow update, delete: if false;
     }
+
+    // Storefront button-click counters. Guests may increment; only admins read.
+    match /analytics/{docId} {
+      allow create, update: if true;
+      allow get, list: if request.auth != null;
+      allow delete: if false;
+    }
   }
 }

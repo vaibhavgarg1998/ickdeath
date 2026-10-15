@@ -8,7 +8,11 @@ import {
   isRazorpayConfigured,
   verifyRazorpaySignature,
 } from "@/lib/razorpay-server";
-import { lineTotalPaise } from "@/lib/product";
+import {
+  cartTotalPaise,
+  cartTotalQty,
+  normalizeCartLines,
+} from "@/lib/product";
 import type { CheckoutDraft, PlacedOrder } from "@/lib/orders";
 import { notifyOrderWhatsApp } from "@/lib/whatsapp-notify";
 
@@ -45,11 +49,15 @@ export async function POST(request: Request) {
       !razorpayOrderId ||
       !razorpayPaymentId ||
       !razorpaySignature ||
-      !draft?.quantity ||
-      !draft.contact?.name ||
+      !draft?.contact?.name ||
       !draft.contact?.phone ||
       !draft.address?.line1
     ) {
+      return NextResponse.json({ error: "Invalid verify payload" }, { status: 400 });
+    }
+
+    const lines = normalizeCartLines(draft.lines, draft.colorway, draft.quantity);
+    if (cartTotalQty(lines) < 1) {
       return NextResponse.json({ error: "Invalid verify payload" }, { status: 400 });
     }
 
@@ -65,9 +73,12 @@ export async function POST(request: Request) {
 
     const order: PlacedOrder = {
       ...draft,
+      lines,
+      quantity: cartTotalQty(lines),
+      colorway: lines[0]?.colorway ?? draft.colorway,
       orderId,
       createdAt: new Date().toISOString(),
-      amountPaise: lineTotalPaise(draft.quantity),
+      amountPaise: cartTotalPaise(lines),
       paymentMethod: "razorpay",
       paymentStatus: "paid",
       orderStatus: "confirmed",

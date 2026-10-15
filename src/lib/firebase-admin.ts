@@ -11,7 +11,7 @@ import type {
   WhatsAppSendStatus,
 } from "@/lib/orders";
 import { TRACK_SENTINEL_ID, toPublicTrackedOrder, uniquePhoneVariants } from "@/lib/orders";
-import { PRODUCT, productNameForColorway } from "@/lib/product";
+import { formatOrderItems, PRODUCT } from "@/lib/product";
 
 export function isFirebaseAdminConfigured(): boolean {
   const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID?.trim();
@@ -71,7 +71,7 @@ export async function markOrderPaidAdmin(input: {
   const base = {
     ...input.order,
     productId: PRODUCT.id,
-    productName: productNameForColorway(input.order.colorway),
+    productName: formatOrderItems(input.order),
     source: "ickdeath-website",
     paymentStatus: "paid" as const,
     orderStatus: input.order.orderStatus ?? "confirmed",

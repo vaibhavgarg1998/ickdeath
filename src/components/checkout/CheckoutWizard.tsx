@@ -9,6 +9,7 @@ import {
   savePlacedOrder,
   subscribeCheckoutDraft,
 } from "@/lib/checkout-storage";
+import { trackButtonClick } from "@/lib/analytics";
 import { placeOrderWithRazorpay } from "@/lib/place-order";
 import { withBasePath } from "@/lib/paths";
 import { isColorwayId } from "@/lib/product";
@@ -42,9 +43,15 @@ export function CheckoutWizard() {
     const params = new URLSearchParams(window.location.search);
     const edition = params.get("edition");
     if (!isColorwayId(edition)) return;
+
     const current = getCheckoutDraftSnapshot();
     if (current.colorway === edition) return;
-    saveCheckoutDraft({ ...current, colorway: edition });
+
+    // Deep link only focuses the edition — quantity stays user-controlled.
+    saveCheckoutDraft({
+      ...current,
+      colorway: edition,
+    });
   }, []);
 
   function updateDraft(next: Parameters<typeof saveCheckoutDraft>[0]) {
@@ -127,7 +134,10 @@ export function CheckoutWizard() {
           <StepQuantity
             draft={draft}
             onChange={updateDraft}
-            onNext={() => setStep("contact")}
+            onNext={() => {
+              trackButtonClick("checkout_continue_quantity");
+              setStep("contact");
+            }}
           />
         ) : null}
         {step === "contact" ? (
@@ -135,7 +145,10 @@ export function CheckoutWizard() {
             draft={draft}
             onChange={updateDraft}
             onBack={() => setStep("quantity")}
-            onNext={() => setStep("address")}
+            onNext={() => {
+              trackButtonClick("checkout_continue_contact");
+              setStep("address");
+            }}
           />
         ) : null}
         {step === "address" ? (
@@ -143,21 +156,30 @@ export function CheckoutWizard() {
             draft={draft}
             onChange={updateDraft}
             onBack={() => setStep("contact")}
-            onNext={() => setStep("summary")}
+            onNext={() => {
+              trackButtonClick("checkout_continue_address");
+              setStep("summary");
+            }}
           />
         ) : null}
         {step === "summary" ? (
           <StepSummary
             draft={draft}
             onBack={() => setStep("address")}
-            onNext={() => setStep("payment")}
+            onNext={() => {
+              trackButtonClick("checkout_continue_summary");
+              setStep("payment");
+            }}
           />
         ) : null}
         {step === "payment" ? (
           <StepPayment
             draft={draft}
             onBack={() => setStep("summary")}
-            onPlaceOrder={handlePlaceOrder}
+            onPlaceOrder={() => {
+              trackButtonClick("checkout_place_order");
+              void handlePlaceOrder();
+            }}
             submitting={submitting}
             error={error}
           />

@@ -14,7 +14,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirebaseDb, isFirebaseConfigured } from "@/lib/firebase";
-import { PRODUCT, productNameForColorway } from "@/lib/product";
+import { formatOrderItems, PRODUCT } from "@/lib/product";
 import {
   TRACK_SENTINEL_ID,
   toPublicTrackedOrder,
@@ -50,7 +50,7 @@ export async function createOrderInFirestore(
   const record: OrderRecord = {
     ...order,
     productId: PRODUCT.id,
-    productName: productNameForColorway(order.colorway),
+    productName: formatOrderItems(order),
     source: "ickdeath-website",
     updatedAt: order.createdAt,
   };

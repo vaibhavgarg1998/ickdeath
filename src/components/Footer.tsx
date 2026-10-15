@@ -1,6 +1,7 @@
-import { AssetImage } from "@/components/AssetImage";
 import Link from "next/link";
-import { TRACK_PATH } from "@/lib/buy";
+import { AssetImage } from "@/components/AssetImage";
+import { Logo } from "@/components/Logo";
+import { TERMS_PATH } from "@/lib/buy";
 
 const socials = [
   {
@@ -24,22 +25,14 @@ export function Footer() {
   return (
     <footer className="relative mt-8 overflow-hidden rounded-t-[28px] border-y-2 border-neon bg-black sm:mt-10 sm:rounded-t-[40px] md:rounded-t-[50px]">
       <div className="mx-auto flex w-full max-w-[1728px] flex-col items-center gap-8 px-4 py-12 sm:gap-10 sm:px-6 sm:py-16 md:flex-row md:justify-between md:px-10 lg:px-16 lg:py-24">
-        <div className="relative h-24 w-[111px] shrink-0 sm:h-32 sm:w-[148px] md:h-40 md:w-[185px] lg:h-48 lg:w-[222px]">
-          <AssetImage
-            src="/assets/logo.png"
-            alt="ICK DEATH"
-            fill
-            className="object-contain object-center md:object-left"
-          />
+        <div className="relative size-24 shrink-0 sm:size-32 md:size-40 lg:size-48">
+          <Logo className="size-full" />
         </div>
 
         <div className="flex flex-col items-center gap-4 text-center font-[family-name:var(--font-inter)] text-base font-semibold text-white sm:gap-6 sm:text-lg md:flex-row md:gap-12 lg:gap-[150px] lg:text-[22px]">
-          <Link href={TRACK_PATH} className="transition-colors hover:text-neon">
-            Track order
-          </Link>
-          <a href="#" className="transition-colors hover:text-neon">
+          <Link href={TERMS_PATH} className="transition-colors hover:text-neon">
             Terms & Privacy
-          </a>
+          </Link>
           <a
             href="mailto:hello@ickdeath.com"
             className="transition-colors hover:text-neon"
@@ -69,20 +62,9 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-4 px-4 pb-8 sm:gap-5 md:block md:px-0">
-        <p className="text-center font-[family-name:var(--font-inter)] text-xs leading-relaxed text-text-dim sm:text-sm md:px-24 md:text-xl lg:px-32">
-          All Rights Reserved. Copyright 2026 Saorsa Technocrat Pvt. Ltd
-        </p>
-
-        <div className="relative size-12 shrink-0 overflow-hidden sm:size-14 md:absolute md:bottom-8 md:right-10 md:size-24 lg:bottom-10 lg:right-12 lg:size-32">
-          <AssetImage
-            src="/assets/skull-footer.svg"
-            alt=""
-            fill
-            className="object-contain"
-          />
-        </div>
-      </div>
+      <p className="px-4 pb-8 text-center font-[family-name:var(--font-inter)] text-xs leading-relaxed text-text-dim sm:text-sm md:px-24 md:text-base lg:px-32">
+        All Rights Reserved. Copyright 2026-27 ICK India Pvt. Ltd.,
+      </p>
     </footer>
   );
 }

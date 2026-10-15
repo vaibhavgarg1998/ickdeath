@@ -2,12 +2,14 @@
 
 import { useRef, useState, type PointerEvent } from "react";
 import { AssetImage } from "@/components/AssetImage";
-import type { CheckoutDraft } from "@/lib/orders";
+import type { CartLine, CheckoutDraft } from "@/lib/orders";
+import { PriceBreakdownPanel } from "@/components/checkout/form-ui";
 import {
+  cartTotalPaise,
+  cartTotalQty,
   COLORWAYS,
   formatINR,
   getColorway,
-  lineTotalPaise,
   PRODUCT,
   productNameForColorway,
   type ColorwayId,
@@ -19,58 +21,102 @@ type Props = {
   onNext: () => void;
 };
 
-export function StepQuantity({ draft, onChange, onNext }: Props) {
-  const qty = draft.quantity;
-  const colorway = getColorway(draft.colorway);
+function qtyForColorway(lines: readonly CartLine[], id: ColorwayId): number {
+  return lines.find((line) => line.colorway === id)?.quantity ?? 0;
+}
 
-  function setQty(next: number) {
-    const clamped = Math.min(
-      PRODUCT.maxQty,
-      Math.max(PRODUCT.minQty, next),
-    );
-    onChange({ ...draft, quantity: clamped });
+function withLineQty(
+  lines: readonly CartLine[],
+  id: ColorwayId,
+  quantity: number,
+): CartLine[] {
+  const next = lines.filter((line) => line.colorway !== id);
+  if (quantity > 0) next.push({ colorway: id, quantity });
+  return COLORWAYS.flatMap((colorway) => {
+    const line = next.find((entry) => entry.colorway === colorway.id);
+    return line ? [line] : [];
+  });
+}
+
+function cartSummary(lines: readonly CartLine[]): string {
+  return lines
+    .filter((line) => line.quantity > 0)
+    .map((line) => {
+      const name = productNameForColorway(line.colorway);
+      // Match design: "1x Barbie edition."
+      return `${line.quantity}x ${name.replace(/ Edition$/i, " edition")}.`;
+    })
+    .join(" ");
+}
+
+export function StepQuantity({ draft, onChange, onNext }: Props) {
+  const lines = draft.lines;
+  const totalQty = cartTotalQty(lines);
+  const focused = getColorway(draft.colorway);
+  const focusedQty = qtyForColorway(lines, focused.id);
+  const others = totalQty - focusedQty;
+  const maxForFocused = Math.max(0, PRODUCT.maxQty - others);
+  const canContinue = totalQty >= PRODUCT.minQty;
+
+  function commit(nextLines: CartLine[], colorway: ColorwayId) {
+    onChange({
+      ...draft,
+      lines: nextLines,
+      quantity: cartTotalQty(nextLines),
+      colorway,
+    });
   }
 
-  function setColorway(id: ColorwayId) {
+  /** Preview only — quantity changes solely via +/-. */
+  function selectColorway(id: ColorwayId) {
     onChange({ ...draft, colorway: id });
+  }
+
+  function bumpFocused(delta: number) {
+    const nextQty = focusedQty + delta;
+    const clamped = Math.min(maxForFocused, Math.max(0, nextQty));
+    commit(withLineQty(lines, focused.id, clamped), focused.id);
   }
 
   return (
     <div>
-      <h2 className="font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-white sm:text-4xl">
-        Product / quantity
-      </h2>
-      <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
-        Pick a colorway and how many packs you want.
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="flex items-center gap-3 font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-white sm:text-4xl">
+          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-neon text-sm font-bold text-bg sm:size-9 sm:text-base">
+            01
+          </span>
+          PRODUCT / QUANTITY
+        </h2>
+      </div>
 
-      <p className="mt-6 font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">
+      <p className="mt-6 flex items-center gap-2 font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">
+        <span className="inline-block h-px w-4 bg-neon" aria-hidden />
         Selected pack
       </p>
 
       <div className="mt-3 flex gap-4 sm:gap-5">
         <ColorwaySlider
-          key={colorway.id}
-          label={productNameForColorway(colorway.id)}
+          key={focused.id}
+          label={productNameForColorway(focused.id)}
           slides={[
             {
-              src: colorway.productSrc,
-              alt: `${colorway.name} edition tab`,
+              src: focused.imageSrc,
+              alt: `${focused.name} edition box`,
             },
             {
-              src: colorway.imageSrc,
-              alt: `${colorway.name} edition box`,
+              src: focused.productSrc,
+              alt: `${focused.name} edition tab`,
             },
           ]}
         />
         <div className="min-w-0 flex-1">
           <p className="font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">
-            Limited edition / {String(colorway.index).padStart(2, "0")}
+            Limited edition / {String(focused.index).padStart(2, "0")}
           </p>
-          <p className="mt-1 font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-white sm:text-4xl">
-            {productNameForColorway(colorway.id)}
+          <p className="mt-1 inline-block border-b border-white/35 pb-0.5 font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-white sm:text-4xl">
+            {productNameForColorway(focused.id).toUpperCase()}
           </p>
-          <p className="mt-1 font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim">
+          <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim">
             {PRODUCT.description}
           </p>
           <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-white">
@@ -82,18 +128,21 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
           </p>
           <div className="mt-2 flex items-center gap-2.5">
             {COLORWAYS.map((option) => {
-              const selected = option.id === colorway.id;
+              const selected = option.id === focused.id;
+              const inCart = qtyForColorway(lines, option.id) > 0;
               return (
                 <button
                   key={option.id}
                   type="button"
-                  aria-label={`${option.name} edition`}
+                  aria-label={`${option.name} edition${inCart ? `, ${qtyForColorway(lines, option.id)} in cart` : ""}`}
                   aria-pressed={selected}
-                  onClick={() => setColorway(option.id)}
+                  onClick={() => selectColorway(option.id)}
                   className={`size-6 rounded-full border-2 transition-transform ${
                     selected
                       ? "scale-110 border-neon"
-                      : "border-white/20 hover:border-white/50"
+                      : inCart
+                        ? "border-white/55 hover:border-neon/70"
+                        : "border-white/20 hover:border-white/50"
                   }`}
                   style={{ backgroundColor: option.swatch }}
                 />
@@ -103,53 +152,56 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
         </div>
       </div>
 
-      <div className="mt-6 flex items-center justify-between gap-4">
-        <div>
+      <div className="mt-8 flex items-start justify-between gap-4">
+        <div className="min-w-0">
           <p className="font-[family-name:var(--font-ibm-plex)] text-sm text-text-soft">
             Quantity
           </p>
           <p className="mt-0.5 font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim">
             Choose how many packs you want.
           </p>
+          {lines.length > 0 ? (
+            <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-xs text-white">
+              {cartSummary(lines)}
+            </p>
+          ) : null}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <button
             type="button"
-            aria-label="Decrease quantity"
-            className="inline-flex size-10 items-center justify-center rounded-lg border border-neon/50 text-neon transition-opacity hover:opacity-80 disabled:opacity-40"
-            disabled={qty <= PRODUCT.minQty}
-            onClick={() => setQty(qty - 1)}
+            aria-label={`Decrease ${focused.name} quantity`}
+            className="inline-flex size-10 items-center justify-center rounded-md border border-neon/50 text-neon transition-opacity hover:opacity-80 disabled:opacity-40"
+            disabled={focusedQty <= 0}
+            onClick={() => bumpFocused(-1)}
           >
             −
           </button>
           <span className="min-w-[2ch] text-center font-[family-name:var(--font-bebas)] text-3xl text-white">
-            {qty}
+            {focusedQty}
           </span>
           <button
             type="button"
-            aria-label="Increase quantity"
-            className="inline-flex size-10 items-center justify-center rounded-lg border border-neon/50 text-neon transition-opacity hover:opacity-90 disabled:opacity-40"
-            disabled={qty >= PRODUCT.maxQty}
-            onClick={() => setQty(qty + 1)}
+            aria-label={`Increase ${focused.name} quantity`}
+            className="inline-flex size-10 items-center justify-center rounded-md bg-neon text-bg transition-opacity hover:opacity-90 disabled:opacity-40"
+            disabled={focusedQty >= maxForFocused}
+            onClick={() => bumpFocused(1)}
           >
             +
           </button>
         </div>
       </div>
 
-      <div className="mt-6 flex items-end justify-between border-t border-white/10 pt-5">
-        <div>
-          <p className="font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-wider text-text-dim">
-            Subtotal
-          </p>
-          <p className="font-[family-name:var(--font-bebas)] text-3xl text-neon">
-            {formatINR(lineTotalPaise(qty))}
-          </p>
-        </div>
+      <PriceBreakdownPanel
+        totalPaise={cartTotalPaise(lines)}
+        className="mt-6 border-t border-white/10 pt-5"
+      />
+
+      <div className="mt-6 flex justify-end">
         <button
           type="button"
           onClick={onNext}
-          className="inline-flex h-12 items-center bg-neon px-6 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-bg transition-opacity hover:opacity-90"
+          disabled={!canContinue}
+          className="inline-flex h-12 items-center bg-neon px-6 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-bg transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           Continue
         </button>

@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { lineTotalPaise, PRODUCT, productNameForColorway } from "@/lib/product";
+import {
+  cartTotalPaise,
+  cartTotalQty,
+  formatCartLines,
+  normalizeCartLines,
+  PRODUCT,
+} from "@/lib/product";
 import {
   getRazorpayClient,
   getRazorpayKeyId,
@@ -12,6 +18,7 @@ type CreateBody = {
   orderId?: string;
   quantity?: number;
   colorway?: string;
+  lines?: unknown;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -28,18 +35,19 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as CreateBody;
     const orderId = body.orderId?.trim();
-    const quantity = Number(body.quantity);
+    const lines = normalizeCartLines(body.lines, body.colorway, body.quantity);
+    const quantity = cartTotalQty(lines);
 
     if (
       !orderId ||
-      !Number.isInteger(quantity) ||
       quantity < PRODUCT.minQty ||
       quantity > PRODUCT.maxQty
     ) {
       return NextResponse.json({ error: "Invalid order payload" }, { status: 400 });
     }
 
-    const amount = lineTotalPaise(quantity);
+    const amount = cartTotalPaise(lines);
+    const productName = formatCartLines(lines);
     const razorpay = getRazorpayClient();
 
     const rzOrder = await razorpay.orders.create({
@@ -50,7 +58,8 @@ export async function POST(request: Request) {
         ickOrderId: orderId,
         productId: PRODUCT.id,
         quantity: String(quantity),
-        colorway: body.colorway ?? "",
+        colorway: lines[0]?.colorway ?? body.colorway ?? "",
+        lines: productName.slice(0, 500),
         customerName: body.customerName ?? "",
         customerPhone: body.customerPhone ?? "",
       },
@@ -62,7 +71,7 @@ export async function POST(request: Request) {
       amount: rzOrder.amount,
       currency: rzOrder.currency,
       orderId,
-      productName: productNameForColorway(body.colorway),
+      productName,
       prefill: {
         name: body.customerName ?? "",
         email: body.customerEmail ?? "",

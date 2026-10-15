@@ -57,7 +57,7 @@ export function Hero() {
       id="product"
       className="mx-auto w-full max-w-[1728px] px-4 pb-10 sm:px-6 sm:pb-14 md:px-10 md:pb-16 lg:px-16 lg:pb-20"
     >
-      <h1 className="animate-rise mt-5 font-[family-name:var(--font-bebas)] text-[clamp(2.75rem,15vw,18.75rem)] leading-[0.92] tracking-tight text-neon-glow sm:mt-7 md:mt-10">
+      <h1 className="animate-rise mt-5 font-[family-name:var(--font-bebas)] text-[clamp(2.5rem,9vw,7.5rem)] leading-[0.95] sm:mt-7 md:mt-10">
         <span className="block text-white">END THE</span>
         <span className="block text-neon">BARE HAND ERA</span>
       </h1>
@@ -110,7 +110,7 @@ export function Hero() {
           {features.map((feature) => (
             <li
               key={feature.label}
-              className="flex items-center gap-2 font-[family-name:var(--font-bebas)] text-base tracking-wide text-neon sm:gap-2.5 sm:text-2xl md:text-3xl lg:text-[40px]"
+              className="flex items-center gap-2 font-[family-name:var(--font-bebas)] text-base tracking-wide text-neon sm:gap-2.5 sm:text-xl md:text-2xl lg:text-[32px]"
             >
               <span className="relative inline-flex size-7 shrink-0 items-center justify-center overflow-hidden sm:size-10 md:size-14">
                 <AssetImage
@@ -127,12 +127,15 @@ export function Hero() {
         </ul>
       </div>
 
-      <p className="animate-rise-delay-2 mt-6 max-w-5xl font-[family-name:var(--font-ibm-plex)] text-base leading-relaxed text-white sm:mt-8 sm:text-xl sm:leading-[1.193] md:mt-12 md:text-3xl lg:text-[40px]">
+      <p className="animate-rise-delay-2 mt-6 max-w-5xl font-[family-name:var(--font-ibm-plex)] text-base leading-relaxed text-white sm:mt-8 sm:text-lg sm:leading-snug md:mt-12 md:text-2xl lg:text-3xl">
         Tiny hygiene tabs that help you lift the toilet seat without touching it
         directly. Pick your personality.
       </p>
 
-      <BuyNowButton className="mt-6 inline-flex h-12 w-full items-center justify-center bg-neon px-6 font-[family-name:var(--font-anton)] text-lg uppercase tracking-[0.16em] text-bg transition-opacity hover:opacity-90 sm:mt-8 sm:h-14 sm:w-auto sm:px-8 sm:text-xl md:mt-10 md:h-[90px] md:min-w-[360px] md:text-[40px]">
+      <BuyNowButton
+        trackId="hero_buy_now"
+        className="mt-6 inline-flex h-12 w-full items-center justify-center bg-neon px-6 font-[family-name:var(--font-anton)] text-lg uppercase tracking-[0.08em] text-bg transition-opacity hover:opacity-90 sm:mt-8 sm:h-14 sm:w-auto sm:px-8 sm:text-xl md:mt-10 md:h-[72px] md:min-w-[280px] md:text-[32px]"
+      >
         Buy Now
       </BuyNowButton>
     </section>

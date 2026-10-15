@@ -41,7 +41,7 @@ function statusLine(order: PublicTrackedOrder): string {
       : order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1);
   return [
     `*${order.orderId}*`,
-    `${order.productName} × ${order.quantity} — ${formatINR(order.amountPaise)}`,
+    `${order.productName} — ${formatINR(order.amountPaise)}`,
     `Status: ${fulfill} · ${pay}`,
     `Track: ${orderTrackUrl(order.orderId)}`,
   ].join("\n");

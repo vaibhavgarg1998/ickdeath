@@ -165,9 +165,7 @@ function OrderCard({ order }: { order: PublicTrackedOrder }) {
 
       <dl className="mt-6 space-y-3 font-[family-name:var(--font-ibm-plex)] text-sm text-text-soft">
         <Row label="Placed">{placed || "—"}</Row>
-        <Row label="Product">
-          {order.productName} × {order.quantity}
-        </Row>
+        <Row label="Product">{order.productName}</Row>
         <Row label="Amount">{formatINR(order.amountPaise)}</Row>
         <Row label="Payment" className="capitalize">
           {order.paymentMethod} · {order.paymentStatus}
