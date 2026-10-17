@@ -6,7 +6,7 @@ const basePath = isGithubPages ? `/${repo}` : "";
 
 const nextConfig: NextConfig = {
   // Static export only for GitHub Pages (no API routes).
-  // Local / Vercel builds keep Route Handlers for Razorpay.
+  // Local / Vercel builds keep Route Handlers for HDFC SmartGateway.
   ...(isGithubPages ? { output: "export" as const } : {}),
   basePath: basePath || undefined,
   assetPrefix: basePath ? `${basePath}/` : undefined,

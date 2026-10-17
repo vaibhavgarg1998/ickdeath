@@ -24,7 +24,7 @@ export default function CheckoutPage() {
               CHECKOUT
             </p>
             <p className="mt-0.5 font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.16em] text-text-dim">
-              Payment partner Razorpay
+              Payment partner HDFC
             </p>
           </div>
         </div>
