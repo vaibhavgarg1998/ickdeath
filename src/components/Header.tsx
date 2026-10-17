@@ -15,7 +15,7 @@ const links: {
 }[] = [
   {
     href: `${withBasePath("/")}#product`,
-    label: "Product",
+    label: "About Us",
     trackId: "nav_product",
   },
   {
