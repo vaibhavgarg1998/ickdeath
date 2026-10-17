@@ -46,5 +46,6 @@ After changing `firestore.rules`, paste them into Firestore → Rules → Publis
 ## 4. Notes
 
 - Firebase client SDK works with static GitHub Pages **and** Vercel.
-- Razorpay payment APIs need a Node server — see `docs/razorpay-setup.md` (use Vercel for production payments).
+- HDFC payment APIs need a Node server — see `docs/hdfc-setup.md` (use Vercel for production payments).
+- Republish `firestore.rules` after pulling: new checkouts must use `paymentMethod == 'hdfc'`.
 - Anyone with a Firebase Auth account that can sign in can manage orders — only create trusted admin users.

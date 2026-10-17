@@ -60,32 +60,35 @@ export function getFirebaseAdminApp(): App {
 
 export async function markOrderPaidAdmin(input: {
   order: PlacedOrder;
-  razorpayOrderId: string;
-  razorpayPaymentId: string;
+  hdfcOrderId: string;
+  hdfcTxnId?: string;
 }): Promise<void> {
   const db = getFirestore(getFirebaseAdminApp());
   const ref = db.collection("orders").doc(input.order.orderId);
   const now = new Date().toISOString();
 
+  const gateway = {
+    paymentMethod: "hdfc" as const,
+    hdfcOrderId: input.hdfcOrderId,
+    ...(input.hdfcTxnId ? { hdfcTxnId: input.hdfcTxnId } : {}),
+  };
+
   const snap = await ref.get();
   const base = {
     ...input.order,
+    ...gateway,
     productId: PRODUCT.id,
     productName: formatOrderItems(input.order),
     source: "ickdeath-website",
     paymentStatus: "paid" as const,
     orderStatus: input.order.orderStatus ?? "confirmed",
-    razorpayOrderId: input.razorpayOrderId,
-    razorpayPaymentId: input.razorpayPaymentId,
     updatedAt: now,
   };
 
   if (snap.exists) {
     await ref.update({
       paymentStatus: "paid",
-      paymentMethod: input.order.paymentMethod,
-      razorpayOrderId: input.razorpayOrderId,
-      razorpayPaymentId: input.razorpayPaymentId,
+      ...gateway,
       updatedAt: now,
     });
   } else {
@@ -94,6 +97,43 @@ export async function markOrderPaidAdmin(input: {
       createdAt: input.order.createdAt,
     });
   }
+}
+
+const HDFC_PAYMENTS = "hdfcPayments";
+
+export async function saveHdfcPaymentAdmin(input: {
+  hdfcOrderId: string;
+  orderId: string;
+  amountPaise: number;
+}): Promise<void> {
+  const db = getFirestore(getFirebaseAdminApp());
+  await db.collection(HDFC_PAYMENTS).doc(input.hdfcOrderId).set({
+    hdfcOrderId: input.hdfcOrderId,
+    orderId: input.orderId,
+    amountPaise: input.amountPaise,
+    createdAt: new Date().toISOString(),
+  });
+  await db.collection("orders").doc(input.orderId).update({
+    hdfcOrderId: input.hdfcOrderId,
+    paymentMethod: "hdfc",
+    paymentStatus: "pending",
+    amountPaise: input.amountPaise,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function getHdfcPaymentAdmin(hdfcOrderId: string): Promise<{
+  orderId: string;
+  amountPaise: number;
+} | null> {
+  const db = getFirestore(getFirebaseAdminApp());
+  const snap = await db.collection(HDFC_PAYMENTS).doc(hdfcOrderId).get();
+  if (!snap.exists) return null;
+  const data = snap.data();
+  const orderId = String(data?.orderId ?? "");
+  const amountPaise = Number(data?.amountPaise ?? 0);
+  if (!orderId || !Number.isFinite(amountPaise)) return null;
+  return { orderId, amountPaise };
 }
 
 /** Auto-set payment status (e.g. failed). Never downgrades a paid order. */

@@ -20,7 +20,7 @@ export function StepPayment({
   error,
 }: Props) {
   const total = cartTotalPaise(draft.lines);
-  const cta = submitting ? "Opening Razorpay…" : `Pay ${formatINR(total)}`;
+  const cta = submitting ? "Opening HDFC…" : `Pay ${formatINR(total)}`;
 
   return (
     <div>
@@ -28,7 +28,7 @@ export function StepPayment({
         Payment
       </h2>
       <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
-        Pay securely with UPI, cards, netbanking, or wallets via Razorpay.
+        Pay securely with UPI, cards, or netbanking via HDFC SmartGateway.
         You&apos;ll get tracking updates on WhatsApp after the order is placed.
       </p>
 
@@ -38,7 +38,7 @@ export function StepPayment({
       />
 
       <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-[0.16em] text-text-dim">
-        Payment partner <span className="text-white">Razorpay</span>
+        Payment partner <span className="text-white">HDFC SmartGateway</span>
       </p>
 
       {error ? (
