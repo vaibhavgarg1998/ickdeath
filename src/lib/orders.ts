@@ -31,7 +31,7 @@ export type CheckoutDraft = {
   address: CheckoutAddress;
 };
 
-export type PaymentMethod = "razorpay" | "whatsapp";
+export type PaymentMethod = "hdfc" | "razorpay" | "whatsapp";
 
 export type PaymentStatus = "pending" | "paid" | "failed";
 
@@ -83,6 +83,10 @@ export type PlacedOrder = CheckoutDraft & {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
+  /** SmartGateway order id (alphanumeric, separate from the customer-facing ICK id). */
+  hdfcOrderId?: string;
+  hdfcTxnId?: string;
+  /** Kept for orders placed before the HDFC switch. */
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   whatsapp?: OrderWhatsApp;
@@ -227,7 +231,14 @@ export function fulfillmentStepIndex(status: OrderStatus): number {
 }
 
 function asPaymentMethod(value: unknown): PaymentMethod {
-  return value === "whatsapp" ? "whatsapp" : "razorpay";
+  if (value === "hdfc" || value === "razorpay" || value === "whatsapp") return value;
+  return "hdfc";
+}
+
+export function paymentMethodLabel(method: PaymentMethod): string {
+  if (method === "hdfc") return "HDFC";
+  if (method === "razorpay") return "Razorpay";
+  return "WhatsApp";
 }
 
 function asPaymentStatus(value: unknown): PaymentStatus {

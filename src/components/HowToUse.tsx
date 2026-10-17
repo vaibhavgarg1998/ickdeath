@@ -4,22 +4,22 @@ const steps = [
   {
     title: "CLEAN",
     description: "Wipe The Lid With The Alcohol",
-    image: "/assets/how-to/clean.png",
+    image: "/assets/how-to/clean.jpg",
   },
   {
     title: "PEEL",
     description: "Peel The 3M Adhesive Backing.",
-    image: "/assets/how-to/peel.png",
+    image: "/assets/how-to/peel.jpg",
   },
   {
     title: "STICK",
     description: "Stick The Tab On The Seat Edge.",
-    image: "/assets/how-to/stick.png",
+    image: "/assets/how-to/stick.jpg",
   },
   {
     title: "LIFT",
     description: "Use The Tab, Not The Seat.",
-    image: "/assets/how-to/lift.png",
+    image: "/assets/how-to/lift.jpg",
   },
 ];
 
@@ -59,13 +59,13 @@ export function HowToUse() {
               <p className="mt-2 font-[family-name:var(--font-space-mono)] text-sm leading-snug text-white sm:mt-3 sm:text-base md:text-xl md:leading-snug">
                 {step.description}
               </p>
-              <div className="relative mt-4 aspect-[8/3] w-full overflow-hidden sm:mt-6">
+              <div className="relative mx-auto mt-4 aspect-video w-[68%] overflow-hidden sm:mt-6">
                 <AssetImage
                   src={step.image}
                   alt={step.description}
                   fill
-                  className="object-contain object-left"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-contain object-center"
+                  sizes="(max-width: 768px) 68vw, 32vw"
                 />
               </div>
             </article>

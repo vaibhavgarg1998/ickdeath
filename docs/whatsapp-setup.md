@@ -1,8 +1,8 @@
 # WhatsApp Business Cloud API (ICK DEATH)
 
-Order updates go out as **utility templates** after Razorpay payment and when an admin changes fulfillment status. Customers can also message the business number to look up an order.
+Order updates go out as **utility templates** after HDFC SmartGateway payment and when an admin changes fulfillment status. Customers can also message the business number to look up an order.
 
-This needs a **Node server** (same as Razorpay). GitHub Pages static export cannot send WhatsApp.
+This needs a **Node server** (same as HDFC). GitHub Pages static export cannot send WhatsApp.
 
 ## 1. Meta setup
 
@@ -64,7 +64,7 @@ Optional env overrides: `WHATSAPP_TEMPLATE_CONFIRMED`, `_PACKED`, `_SHIPPED`, `_
 
 ## 4. What the app sends
 
-1. **Checkout** — `/api/razorpay/verify` succeeds → `ickdeath_order_confirmed`
+1. **Checkout** — HDFC reports the order as charged → `ickdeath_order_confirmed`
 2. **Admin** (`/admin/`) — order status change → matching template (once per event; **Resend WhatsApp update** forces another send)
 3. **Inbound** — customer texts the business number:
    - Looks up orders for that WhatsApp number
@@ -80,7 +80,7 @@ Delivery receipts (`sent` / `delivered` / `read` / `failed`) are written to `ord
 2. `npm run dev`
 3. Expose the webhook (ngrok / Cloudflare tunnel) and paste `https://<tunnel>/api/whatsapp/webhook` in Meta
 4. Send the default `hello_world` template from Meta’s API tester to confirm the token works
-5. Place a test Razorpay order — customer should get `ickdeath_order_confirmed` after payment
+5. Place a test HDFC order — customer should get `ickdeath_order_confirmed` after payment
 6. In `/admin/`, change status to packed/shipped and confirm the matching template
 
 Checkout never fails if WhatsApp is down or unconfigured.

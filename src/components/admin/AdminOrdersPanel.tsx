@@ -11,6 +11,7 @@ import { updateAdminOrderStatus, AdminApiError } from "@/lib/admin-api";
 import {
   ORDER_STATUSES,
   PAYMENT_STATUSES,
+  paymentMethodLabel,
   type OrderStatus,
   type PaymentStatus,
 } from "@/lib/orders";
@@ -297,7 +298,7 @@ function OrderDetail({
         <Row label="Product">{formatOrderItems(order)}</Row>
         <Row label="Amount">{formatINR(order.amountPaise)}</Row>
         <Row label="Payment method" className="capitalize">
-          {order.paymentMethod}
+          {paymentMethodLabel(order.paymentMethod)}
         </Row>
         <Row label="Customer">
           {order.contact.name}
@@ -325,7 +326,7 @@ function OrderDetail({
 
       <div className="mt-6 space-y-4 border-t border-white/10 pt-5">
         <p className="font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim">
-          Payment status updates automatically from Razorpay (
+          Payment status updates automatically from HDFC SmartGateway (
           <span className="text-white/70">pending → paid / failed</span>
           ). Order status starts as{" "}
           <span className="text-white/70">confirmed</span>. You can change either
