@@ -1,9 +1,5 @@
 [
   {
-    "state": "Andaman and Nicobar Islands",
-    "cities": ["Port Blair", "Diglipur", "Mayabunder", "Car Nicobar"]
-  },
-  {
     "state": "Andhra Pradesh",
     "cities": [
       "Visakhapatnam",
@@ -29,11 +25,7 @@
     "cities": [
       "Itanagar",
       "Naharlagun",
-      "Pasighat",
-      "Tawang",
-      "Ziro",
-      "Tezu",
-      "Bomdila"
+      "Pasighat"
     ]
   },
   {
@@ -146,8 +138,7 @@
       "Porbandar",
       "Godhra",
       "Palanpur",
-      "Surendranagar",
-      "Bhuj"
+      "Surendranagar"
     ]
   },
   {
@@ -264,14 +255,6 @@
     ]
   },
   {
-    "state": "Ladakh",
-    "cities": ["Leh", "Kargil"]
-  },
-  {
-    "state": "Lakshadweep",
-    "cities": ["Kavaratti", "Agatti", "Minicoy"]
-  },
-  {
     "state": "Madhya Pradesh",
     "cities": [
       "Bhopal",
@@ -337,9 +320,7 @@
       "Imphal",
       "Thoubal",
       "Bishnupur",
-      "Churachandpur",
-      "Kakching",
-      "Ukhrul"
+      "Kakching"
     ]
   },
   {
@@ -348,11 +329,11 @@
   },
   {
     "state": "Mizoram",
-    "cities": ["Aizawl", "Lunglei", "Champhai", "Serchhip", "Kolasib"]
+    "cities": ["Lunglei", "Champhai", "Serchhip", "Kolasib"]
   },
   {
     "state": "Nagaland",
-    "cities": ["Kohima", "Dimapur", "Mokokchung", "Tuensang", "Wokha", "Zunheboto"]
+    "cities": ["Dimapur", "Wokha", "Zunheboto"]
   },
   {
     "state": "Odisha",
@@ -423,7 +404,7 @@
   },
   {
     "state": "Sikkim",
-    "cities": ["Gangtok", "Namchi", "Gyalshing", "Mangan", "Rangpo"]
+    "cities": ["Namchi", "Gyalshing", "Mangan", "Rangpo"]
   },
   {
     "state": "Tamil Nadu",
