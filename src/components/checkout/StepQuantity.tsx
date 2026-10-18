@@ -41,11 +41,26 @@ function cartSummary(lines: readonly CartLine[]): string {
   return lines
     .filter((line) => line.quantity > 0)
     .map((line) => {
-      const name = productNameForColorway(line.colorway);
-      // Match design: "1x Barbie edition."
-      return `${line.quantity}x ${name.replace(/ Edition$/i, " edition")}.`;
+      const colorway = getColorway(line.colorway);
+      const label =
+        colorway.tier === "simple" ? colorway.name : `${colorway.name} edition`;
+      return `${line.quantity}x ${label}.`;
     })
     .join(" ");
+}
+
+function slidesFor(colorway: ReturnType<typeof getColorway>) {
+  const noun = colorway.tier === "simple" ? colorway.name : `${colorway.name} edition`;
+  const slides = [
+    { src: colorway.imageSrc, alt: `${noun} pack` },
+    { src: colorway.productSrc, alt: `${noun} tab` },
+  ];
+  const seen = new Set<string>();
+  return slides.filter((slide) => {
+    if (seen.has(slide.src)) return false;
+    seen.add(slide.src);
+    return true;
+  });
 }
 
 export function StepQuantity({ draft, onChange, onNext }: Props) {
@@ -97,20 +112,14 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
         <ColorwaySlider
           key={focused.id}
           label={productNameForColorway(focused.id)}
-          slides={[
-            {
-              src: focused.imageSrc,
-              alt: `${focused.name} edition box`,
-            },
-            {
-              src: focused.productSrc,
-              alt: `${focused.name} edition tab`,
-            },
-          ]}
+          fit={focused.tier === "simple" ? "contain" : "cover"}
+          slides={slidesFor(focused)}
         />
         <div className="min-w-0 flex-1">
           <p className="font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">
-            Limited edition / {String(focused.index).padStart(2, "0")}
+            {focused.tier === "limited"
+              ? `Limited edition / ${String(focused.index).padStart(2, "0")}`
+              : "Simple"}
           </p>
           <p className="mt-1 inline-block border-b border-white/35 pb-0.5 font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-white sm:text-4xl">
             {productNameForColorway(focused.id).toUpperCase()}
@@ -119,7 +128,7 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
             {PRODUCT.description}
           </p>
           <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-white">
-            {formatINR(PRODUCT.unitPricePaise)} each
+            {formatINR(focused.unitPricePaise)} each
             <span className="text-text-dim">
               {" "}
               + {formatINR(PRODUCT.deliveryPaisePerUnit)} delivery
@@ -132,21 +141,43 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
           <div className="mt-2 flex items-center gap-2.5">
             {COLORWAYS.map((option) => {
               const selected = option.id === focused.id;
-              const inCart = qtyForColorway(lines, option.id) > 0;
+              const qty = qtyForColorway(lines, option.id);
+              const inCart = qty > 0;
+              const label =
+                option.tier === "simple" ? option.name : `${option.name} edition`;
+              const ring = selected
+                ? "scale-110 border-neon"
+                : inCart
+                  ? "border-white/55 hover:border-neon/70"
+                  : "border-white/20 hover:border-white/50";
+              if (option.tier === "simple") {
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    aria-label={`${label}${inCart ? `, ${qty} in cart` : ""}`}
+                    aria-pressed={selected}
+                    onClick={() => selectColorway(option.id)}
+                    className={`inline-flex h-6 items-center gap-1.5 rounded-full border-2 py-0 pl-1 pr-2 transition-transform ${ring}`}
+                  >
+                    <span
+                      className="size-3.5 rounded-full border border-black/15"
+                      style={{ backgroundColor: option.swatch }}
+                    />
+                    <span className="font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.12em] text-white">
+                      Simple
+                    </span>
+                  </button>
+                );
+              }
               return (
                 <button
                   key={option.id}
                   type="button"
-                  aria-label={`${option.name} edition${inCart ? `, ${qtyForColorway(lines, option.id)} in cart` : ""}`}
+                  aria-label={`${label}${inCart ? `, ${qty} in cart` : ""}`}
                   aria-pressed={selected}
                   onClick={() => selectColorway(option.id)}
-                  className={`size-6 rounded-full border-2 transition-transform ${
-                    selected
-                      ? "scale-110 border-neon"
-                      : inCart
-                        ? "border-white/55 hover:border-neon/70"
-                        : "border-white/20 hover:border-white/50"
-                  }`}
+                  className={`size-6 rounded-full border-2 transition-transform ${ring}`}
                   style={{ backgroundColor: option.swatch }}
                 />
               );
@@ -195,7 +226,7 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
       </div>
 
       <PriceBreakdownPanel
-        quantity={cartTotalQty(lines)}
+        lines={lines}
         className="mt-6 border-t border-white/10 pt-5"
       />
 
@@ -221,9 +252,11 @@ type Slide = {
 function ColorwaySlider({
   slides,
   label,
+  fit = "cover",
 }: {
   slides: readonly Slide[];
   label: string;
+  fit?: "cover" | "contain";
 }) {
   const [index, setIndex] = useState(0);
   const startX = useRef<number | null>(null);
@@ -270,45 +303,49 @@ function ColorwaySlider({
             fill
             priority
             sizes="144px"
-            className="object-cover"
+            className={fit === "contain" ? "object-contain" : "object-cover"}
           />
         </div>
       ))}
 
-      <button
-        type="button"
-        aria-label="Previous image"
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={() => go(index - 1)}
-        className="absolute left-1 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-sm leading-none text-white"
-      >
-        ‹
-      </button>
-      <button
-        type="button"
-        aria-label="Next image"
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={() => go(index + 1)}
-        className="absolute right-1 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-sm leading-none text-white"
-      >
-        ›
-      </button>
-
-      <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1.5">
-        {slides.map((slide, i) => (
+      {count > 1 ? (
+        <>
           <button
-            key={slide.src}
             type="button"
-            aria-label={slide.alt}
-            aria-current={i === index ? "true" : undefined}
+            aria-label="Previous image"
             onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => setIndex(i)}
-            className={`size-1.5 rounded-full ${
-              i === index ? "bg-neon" : "bg-white/55"
-            }`}
-          />
-        ))}
-      </div>
+            onClick={() => go(index - 1)}
+            className="absolute left-1 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-sm leading-none text-white"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            aria-label="Next image"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => go(index + 1)}
+            className="absolute right-1 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-sm leading-none text-white"
+          >
+            ›
+          </button>
+
+          <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1.5">
+            {slides.map((slide, i) => (
+              <button
+                key={slide.src}
+                type="button"
+                aria-label={slide.alt}
+                aria-current={i === index ? "true" : undefined}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={() => setIndex(i)}
+                className={`size-1.5 rounded-full ${
+                  i === index ? "bg-neon" : "bg-white/55"
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

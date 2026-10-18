@@ -8,7 +8,7 @@ import {
   subscribePlacedOrder,
 } from "@/lib/checkout-storage";
 import { PriceBreakdownPanel } from "@/components/checkout/form-ui";
-import { formatOrderItems } from "@/lib/product";
+import { formatOrderItems, normalizeCartLines } from "@/lib/product";
 import { customerWhatsAppUrl } from "@/lib/place-order";
 import { TRACK_PATH } from "@/lib/buy";
 
@@ -48,7 +48,13 @@ export function CheckoutSuccessClient() {
                   <dd>{formatOrderItems(order)}</dd>
                 </div>
                 <div className="border-b border-white/10 pb-3">
-                  <PriceBreakdownPanel quantity={order.quantity} />
+                  <PriceBreakdownPanel
+                    lines={normalizeCartLines(
+                      order.lines,
+                      order.colorway,
+                      order.quantity,
+                    )}
+                  />
                 </div>
                 <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
                   <dt className="text-text-dim">Payment</dt>

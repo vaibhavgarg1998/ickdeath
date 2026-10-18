@@ -1,14 +1,20 @@
+/** Inclusive prices in INR paise. GST is included in these amounts. */
+export const LIMITED_UNIT_PRICE_PAISE = 69900;
+export const SIMPLE_UNIT_PRICE_PAISE = 59900;
+
 /** Single SKU sold on the website (guest checkout). Update price when live. */
 export const PRODUCT = {
   id: "seat-safe-tabs",
   name: "Seat Safe Tabs",
   shortName: "ICK DEATH Seat Safe Tabs",
   description: "1× Lifter · 2× Alcohol Wipes · 1× Gloves",
-  /** Inclusive price in INR paise (59900 = ₹599 incl. GST). */
-  unitPricePaise: 59900,
+  /** Limited edition inclusive price (69900 = ₹699 incl. GST). */
+  unitPricePaise: LIMITED_UNIT_PRICE_PAISE,
+  /** Simple (non-edition) inclusive price (59900 = ₹599 incl. GST). */
+  simpleUnitPricePaise: SIMPLE_UNIT_PRICE_PAISE,
   /** Flat delivery charge per pack in paise (5000 = ₹50). */
   deliveryPaisePerUnit: 5000,
-  /** GST rate baked into unitPricePaise (18% → base ≈ ₹507.63). */
+  /** GST rate baked into each colorway's inclusive price. */
   gstRatePercent: 18,
   currency: "INR" as const,
   minQty: 1,
@@ -21,33 +27,51 @@ export const COLORWAYS = [
     id: "barbie",
     name: "Barbie",
     index: 1,
+    tier: "limited",
     swatch: "#F5A0C5",
     productSrc: "/assets/products/barbie.jpg",
     imageSrc: "/assets/hero-box-4.png",
+    unitPricePaise: LIMITED_UNIT_PRICE_PAISE,
   },
   {
     id: "traveller",
     name: "Traveller",
     index: 2,
+    tier: "limited",
     swatch: "#FFE600",
     productSrc: "/assets/products/traveller.jpg",
     imageSrc: "/assets/hero-box-1.png",
+    unitPricePaise: LIMITED_UNIT_PRICE_PAISE,
   },
   {
     id: "beard",
     name: "Beard",
     index: 3,
+    tier: "limited",
     swatch: "#243D80",
     productSrc: "/assets/products/beard.jpg",
     imageSrc: "/assets/hero-box-3.png",
+    unitPricePaise: LIMITED_UNIT_PRICE_PAISE,
   },
   {
     id: "peace",
     name: "Peace",
     index: 4,
+    tier: "limited",
     swatch: "#FFFFFF",
     productSrc: "/assets/products/peace.jpg",
     imageSrc: "/assets/hero-box-2.png",
+    unitPricePaise: LIMITED_UNIT_PRICE_PAISE,
+  },
+  {
+    id: "simple",
+    name: "Simple",
+    index: 5,
+    tier: "simple",
+    swatch: "#FFFFFF",
+    productSrc: "/assets/products/simple.jpg",
+    imageSrc: "/assets/products/simple.jpg",
+    unitPricePaise: SIMPLE_UNIT_PRICE_PAISE,
   },
 ] as const;
 
@@ -70,7 +94,8 @@ export function getColorway(id: unknown) {
 }
 
 export function productNameForColorway(id: unknown): string {
-  return `${getColorway(id).name} Edition`;
+  const colorway = getColorway(id);
+  return colorway.tier === "simple" ? colorway.name : `${colorway.name} Edition`;
 }
 
 export function formatINR(paise: number): string {
@@ -103,14 +128,16 @@ export type PriceBreakdown = {
   totalPaise: number;
 };
 
-/** Product + GST + delivery breakdown for a quantity. */
-export function priceBreakdown(quantity: number): PriceBreakdown {
-  const qty = Math.max(0, Math.floor(quantity));
-  const productPaise = lineTotalPaise(qty);
+/** Product + GST + delivery breakdown. GST is 18% of the taxable value inside each inclusive price. */
+export function priceBreakdown(lines: readonly CartLine[]): PriceBreakdown {
+  const productPaise = lines.reduce((sum, line) => {
+    const qty = Math.max(0, Math.floor(line.quantity));
+    return sum + getColorway(line.colorway).unitPricePaise * qty;
+  }, 0);
   const basePaise = Math.round(
     productPaise / (1 + PRODUCT.gstRatePercent / 100),
   );
-  const deliveryPaise = deliveryTotalPaise(qty);
+  const deliveryPaise = deliveryTotalPaise(cartTotalQty(lines));
   return {
     basePaise,
     gstPaise: productPaise - basePaise,
@@ -118,10 +145,6 @@ export function priceBreakdown(quantity: number): PriceBreakdown {
     deliveryPaise,
     totalPaise: productPaise + deliveryPaise,
   };
-}
-
-export function lineTotalPaise(quantity: number): number {
-  return PRODUCT.unitPricePaise * quantity;
 }
 
 export function deliveryTotalPaise(quantity: number): number {
@@ -134,7 +157,7 @@ export function cartTotalQty(lines: readonly CartLine[]): number {
 
 /** Product (incl. GST) + delivery for all cart lines. */
 export function cartTotalPaise(lines: readonly CartLine[]): number {
-  return priceBreakdown(cartTotalQty(lines)).totalPaise;
+  return priceBreakdown(lines).totalPaise;
 }
 
 export function formatCartLines(lines: readonly CartLine[]): string {

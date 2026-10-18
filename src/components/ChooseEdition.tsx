@@ -1,21 +1,28 @@
 import { AssetImage } from "@/components/AssetImage";
 import { BuyNowButton } from "@/components/BuyNowButton";
 import type { TrackedButtonId } from "@/lib/analytics";
-import { COLORWAYS, type ColorwayId } from "@/lib/product";
+import { COLORWAYS } from "@/lib/product";
 
-const editionLabels: Record<ColorwayId, string> = {
+const LIMITED_COLORWAYS = COLORWAYS.filter(
+  (edition) => edition.tier === "limited",
+);
+
+const editionLabels = {
   barbie: "BARBIE",
   traveller: "TRAVEL",
   beard: "BEARD",
   peace: "PEACE",
-};
+} as const satisfies Record<(typeof LIMITED_COLORWAYS)[number]["id"], string>;
 
-const editionTrackIds: Record<ColorwayId, TrackedButtonId> = {
+const editionTrackIds = {
   barbie: "edition_barbie",
   traveller: "edition_traveller",
   beard: "edition_beard",
   peace: "edition_peace",
-};
+} as const satisfies Record<
+  (typeof LIMITED_COLORWAYS)[number]["id"],
+  TrackedButtonId
+>;
 
 export function ChooseEdition() {
   return (
@@ -29,7 +36,7 @@ export function ChooseEdition() {
       </h2>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-5 md:mt-14 md:gap-8 lg:gap-10">
-        {COLORWAYS.map((edition) => (
+        {LIMITED_COLORWAYS.map((edition) => (
           <BuyNowButton
             key={edition.id}
             edition={edition.id}
