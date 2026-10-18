@@ -31,7 +31,7 @@ export type CheckoutDraft = {
   address: CheckoutAddress;
 };
 
-export type PaymentMethod = "razorpay" | "whatsapp";
+export type PaymentMethod = "hdfc" | "razorpay" | "whatsapp";
 
 export type PaymentStatus = "pending" | "paid" | "failed";
 
@@ -83,6 +83,10 @@ export type PlacedOrder = CheckoutDraft & {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
+  /** SmartGateway order id (alphanumeric, separate from the customer-facing ICK id). */
+  hdfcOrderId?: string;
+  hdfcTxnId?: string;
+  /** Kept for orders placed before the HDFC switch. */
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   whatsapp?: OrderWhatsApp;
@@ -132,6 +136,46 @@ export const ORDER_ID_PATTERN = /^ICK-\d{8}-\d{4}$/;
 
 export function normalizeOrderId(raw: string): string {
   return raw.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+/**
+ * Inserts dashes while an order ID is typed: ICK-YYYYMMDD-1234.
+ * Mobile numbers (no letters) are left unchanged.
+ * A trailing dash is not put back if the user just deleted it.
+ */
+export function formatTrackQueryInput(raw: string, previous = ""): string {
+  const compact = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!/[A-Z]/.test(compact)) return raw;
+
+  const prevCompact = previous.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const deletedSeparator =
+    raw.length < previous.length && compact === prevCompact;
+
+  const formatted = maskOrderIdInput(compact);
+  if (
+    deletedSeparator &&
+    formatted.endsWith("-") &&
+    formatted.slice(0, -1).replace(/[^A-Z0-9]/g, "") === compact
+  ) {
+    return formatted.slice(0, -1);
+  }
+  return formatted;
+}
+
+function maskOrderIdInput(compact: string): string {
+  const prefix = "ICK";
+  if (prefix.startsWith(compact)) {
+    return compact.length === prefix.length ? `${prefix}-` : compact;
+  }
+  if (!compact.startsWith(prefix)) return compact;
+
+  const digits = compact.slice(prefix.length).replace(/\D/g, "").slice(0, 12);
+  const date = digits.slice(0, 8);
+  const seq = digits.slice(8, 12);
+  if (digits.length === 0) return `${prefix}-`;
+  if (digits.length < 8) return `${prefix}-${date}`;
+  if (digits.length === 8) return `${prefix}-${date}-`;
+  return `${prefix}-${date}-${seq}`;
 }
 
 export function isValidOrderId(orderId: string): boolean {
@@ -227,7 +271,14 @@ export function fulfillmentStepIndex(status: OrderStatus): number {
 }
 
 function asPaymentMethod(value: unknown): PaymentMethod {
-  return value === "whatsapp" ? "whatsapp" : "razorpay";
+  if (value === "hdfc" || value === "razorpay" || value === "whatsapp") return value;
+  return "hdfc";
+}
+
+export function paymentMethodLabel(method: PaymentMethod): string {
+  if (method === "hdfc") return "HDFC";
+  if (method === "razorpay") return "Razorpay";
+  return "WhatsApp";
 }
 
 function asPaymentStatus(value: unknown): PaymentStatus {

@@ -222,7 +222,7 @@ async function ensureTrackSentinel(): Promise<void> {
       },
       quantity: 1,
       amountPaise: 0,
-      paymentMethod: "razorpay",
+      paymentMethod: "hdfc",
       paymentStatus: "pending",
       orderStatus: "confirmed",
       productId: PRODUCT.id,

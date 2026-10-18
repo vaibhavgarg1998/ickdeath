@@ -1,9 +1,4 @@
-import {
-  cartTotalPaise,
-  cartTotalQty,
-  formatOrderItems,
-  PRODUCT,
-} from "@/lib/product";
+import { cartTotalPaise, cartTotalQty, formatOrderItems } from "@/lib/product";
 import {
   generateOrderId,
   type CheckoutDraft,
@@ -11,20 +6,10 @@ import {
 } from "@/lib/orders";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { createOrderInFirestore } from "@/lib/orders-db";
-import {
-  createRazorpayOrder,
-  loadRazorpayScript,
-  markRazorpayPaymentFailed,
-  openRazorpayCheckout,
-  verifyRazorpayPayment,
-} from "@/lib/razorpay-client";
+import { withBasePath } from "@/lib/paths";
 
 function whatsappBusinessNumber(): string {
   return (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "").replace(/\D/g, "");
-}
-
-function ordersWebhookUrl(): string {
-  return process.env.NEXT_PUBLIC_ORDERS_WEBHOOK_URL ?? "";
 }
 
 export function buildCustomerWhatsAppMessage(order: PlacedOrder): string {
@@ -48,27 +33,6 @@ export function customerWhatsAppUrl(order: PlacedOrder): string | null {
   return `https://wa.me/${n}?text=${text}`;
 }
 
-async function postWebhook(order: PlacedOrder): Promise<void> {
-  const url = ordersWebhookUrl();
-  if (!url) return;
-
-  try {
-    await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...order,
-        productId: PRODUCT.id,
-        productName: formatOrderItems(order),
-        source: "ickdeath-website",
-      }),
-      mode: "no-cors",
-    });
-  } catch {
-    // Webhook is best-effort.
-  }
-}
-
 function buildPendingOrder(draft: CheckoutDraft): PlacedOrder {
   const quantity = cartTotalQty(draft.lines);
   return {
@@ -78,60 +42,37 @@ function buildPendingOrder(draft: CheckoutDraft): PlacedOrder {
     orderId: generateOrderId(),
     createdAt: new Date().toISOString(),
     amountPaise: cartTotalPaise(draft.lines),
-    paymentMethod: "razorpay",
+    paymentMethod: "hdfc",
     paymentStatus: "pending",
     orderStatus: "confirmed",
   };
 }
 
-/** Razorpay path — create pending order, collect payment, verify, mark paid. */
-export async function placeOrderWithRazorpay(input: {
+function apiUrl(path: string): string {
+  const normalized = path.endsWith("/") ? path.slice(0, -1) : path;
+  return withBasePath(normalized);
+}
+
+/** Create a pending order, then send the customer to HDFC SmartGateway. */
+export async function startHdfcCheckout(input: {
   draft: CheckoutDraft;
-}): Promise<PlacedOrder> {
+}): Promise<void> {
   const pending = buildPendingOrder(input.draft);
 
-  if (isFirebaseConfigured()) {
-    await createOrderInFirestore(pending);
+  if (!isFirebaseConfigured()) {
+    throw new Error("Firebase is not configured");
+  }
+  await createOrderInFirestore(pending);
+
+  const res = await fetch(apiUrl("/api/hdfc/session"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderId: pending.orderId }),
+  });
+  const data = (await res.json()) as { paymentLink?: string; error?: string };
+  if (!res.ok || !data.paymentLink) {
+    throw new Error(data.error ?? "Could not start HDFC payment");
   }
 
-  const scriptOk = await loadRazorpayScript();
-  if (!scriptOk) {
-    throw new Error("Could not load Razorpay checkout");
-  }
-
-  const created = await createRazorpayOrder({
-    orderId: pending.orderId,
-    draft: input.draft,
-  });
-
-  const paid = await new Promise<PlacedOrder>((resolve, reject) => {
-    openRazorpayCheckout({
-      create: created,
-      onDismiss: () => reject(new Error("Payment cancelled")),
-      onFailure: (message) => {
-        void markRazorpayPaymentFailed(pending.orderId).finally(() => {
-          reject(new Error(message));
-        });
-      },
-      onSuccess: (response) => {
-        void (async () => {
-          try {
-            const order = await verifyRazorpayPayment({
-              orderId: pending.orderId,
-              draft: input.draft,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            });
-            resolve(order);
-          } catch (err) {
-            reject(err);
-          }
-        })();
-      },
-    });
-  });
-
-  await postWebhook(paid);
-  return paid;
+  window.location.assign(data.paymentLink);
 }

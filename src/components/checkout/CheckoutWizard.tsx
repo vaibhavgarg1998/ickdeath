@@ -2,16 +2,13 @@
 
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
-  clearCheckoutDraft,
   getCheckoutDraftServerSnapshot,
   getCheckoutDraftSnapshot,
   saveCheckoutDraft,
-  savePlacedOrder,
   subscribeCheckoutDraft,
 } from "@/lib/checkout-storage";
 import { trackButtonClick } from "@/lib/analytics";
-import { placeOrderWithRazorpay } from "@/lib/place-order";
-import { withBasePath } from "@/lib/paths";
+import { startHdfcCheckout } from "@/lib/place-order";
 import { isColorwayId } from "@/lib/product";
 import { StepQuantity } from "@/components/checkout/StepQuantity";
 import { StepContact } from "@/components/checkout/StepContact";
@@ -41,6 +38,25 @@ export function CheckoutWizard() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    if (payment === "cancelled") {
+      setStep("payment");
+      setError("Payment was cancelled. You can try again.");
+    } else if (payment === "pending") {
+      setStep("payment");
+      setError(
+        "Payment is still processing. We'll confirm this order shortly — don't pay again yet.",
+      );
+    } else if (payment === "review") {
+      setStep("payment");
+      setError(
+        "We received a payment we couldn't match. Message us on WhatsApp with your order ID before paying again.",
+      );
+    } else if (payment === "failed") {
+      setStep("payment");
+      setError("Payment failed. You can try again.");
+    }
+
     const edition = params.get("edition");
     if (!isColorwayId(edition)) return;
 
@@ -64,28 +80,13 @@ export function CheckoutWizard() {
     setSubmitting(true);
     setError(null);
     try {
-      const order = await placeOrderWithRazorpay({ draft });
-
-      savePlacedOrder(order);
-      clearCheckoutDraft();
-
-      window.location.href = withBasePath(
-        `/checkout/success/?order=${encodeURIComponent(order.orderId)}`,
-      );
+      await startHdfcCheckout({ draft });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Could not place order. Please try again.";
 
-      if (message.includes("cancelled") || message.includes("Payment cancelled")) {
-        setError("Payment was cancelled. You can try again.");
-      } else if (message.includes("Firebase")) {
+      if (message.includes("Firebase")) {
         setError("Order could not be saved. Check Firebase configuration.");
-      } else if (
-        message.includes("Razorpay") ||
-        message.includes("payment") ||
-        message.includes("503")
-      ) {
-        setError(message);
       } else {
         setError(message || "Could not place order. Please try again.");
       }

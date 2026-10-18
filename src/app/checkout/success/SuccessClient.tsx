@@ -1,23 +1,52 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
+  clearCheckoutDraft,
   getPlacedOrderServerSnapshot,
   getPlacedOrderSnapshot,
+  savePlacedOrder,
   subscribePlacedOrder,
 } from "@/lib/checkout-storage";
 import { PriceBreakdownPanel } from "@/components/checkout/form-ui";
 import { formatOrderItems, normalizeCartLines } from "@/lib/product";
 import { customerWhatsAppUrl } from "@/lib/place-order";
+import { paymentMethodLabel, type PlacedOrder } from "@/lib/orders";
+import { getOrderFromFirestore } from "@/lib/orders-db";
+import { isFirebaseConfigured } from "@/lib/firebase";
 import { TRACK_PATH } from "@/lib/buy";
 
 export function CheckoutSuccessClient() {
-  const order = useSyncExternalStore(
+  const stored = useSyncExternalStore(
     subscribePlacedOrder,
     getPlacedOrderSnapshot,
     getPlacedOrderServerSnapshot,
   );
+  const [remote, setRemote] = useState<PlacedOrder | null>(null);
+
+  useEffect(() => {
+    const orderId = new URLSearchParams(window.location.search).get("order");
+    if (!orderId || !isFirebaseConfigured()) return;
+
+    let cancelled = false;
+    void getOrderFromFirestore(orderId)
+      .then((record) => {
+        if (cancelled || !record) return;
+        savePlacedOrder(record);
+        if (record.paymentStatus === "paid") clearCheckoutDraft();
+        setRemote(record);
+      })
+      .catch(() => {
+        // Fall back to the order saved in this browser, if any.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const order = remote ?? stored;
 
   const wa = order ? customerWhatsAppUrl(order) : null;
 
@@ -58,8 +87,9 @@ export function CheckoutSuccessClient() {
                 </div>
                 <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
                   <dt className="text-text-dim">Payment</dt>
-                  <dd className="capitalize">
-                    {order.paymentMethod} · {order.paymentStatus}
+                  <dd>
+                    {paymentMethodLabel(order.paymentMethod)} ·{" "}
+                    <span className="capitalize">{order.paymentStatus}</span>
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
