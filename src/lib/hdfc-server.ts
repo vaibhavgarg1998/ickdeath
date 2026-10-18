@@ -1,5 +1,38 @@
-import { APIError, Juspay } from "expresscheckout-nodejs";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import type { APIError, Juspay } from "expresscheckout-nodejs";
 import crypto from "crypto";
+
+type HdfcSdk = typeof import("expresscheckout-nodejs");
+
+let sdkPromise: Promise<HdfcSdk> | null = null;
+
+/**
+ * The SDK reads package.json as soon as it is loaded and throws if that file
+ * is missing a name and version. On Vercel that file is not the app's
+ * package.json, and the throw happens before the route can respond.
+ * Load it only when a payment runs, from a temp directory with a valid file.
+ */
+function loadSdk(): Promise<HdfcSdk> {
+  if (!sdkPromise) {
+    sdkPromise = (async () => {
+      const projectDir = process.cwd();
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ick-juspay-"));
+      fs.writeFileSync(
+        path.join(dir, "package.json"),
+        JSON.stringify({ name: "ickdeath", version: "0.1.0" }),
+      );
+      process.chdir(dir);
+      try {
+        return await import("expresscheckout-nodejs");
+      } finally {
+        process.chdir(projectDir);
+      }
+    })();
+  }
+  return sdkPromise;
+}
 
 const SANDBOX_BASE_URL = "https://smartgateway.hdfcuat.bank.in";
 const PRODUCTION_BASE_URL = "https://smartgateway.hdfc.bank.in";
@@ -62,12 +95,13 @@ export function isHdfcConfigured(): boolean {
 
 let cached: Juspay | null = null;
 
-export function getHdfcClient(): Juspay {
+export async function getHdfcClient(): Promise<Juspay> {
   if (cached) return cached;
   if (!isHdfcConfigured()) {
     throw new HdfcConfigError("HDFC SmartGateway is not configured on the server");
   }
 
+  const { Juspay } = await loadSdk();
   const logging = process.env.HDFC_ENABLE_LOGGING === "true";
   if (!logging) Juspay.customLogger = Juspay.silentLogger;
 
@@ -123,7 +157,8 @@ export type HdfcGatewayStatus = {
 export async function fetchHdfcOrderStatus(
   hdfcOrderId: string,
 ): Promise<HdfcGatewayStatus> {
-  const response = await getHdfcClient().order.status(hdfcOrderId);
+  const client = await getHdfcClient();
+  const response = await client.order.status(hdfcOrderId);
   return {
     orderId: String(response.order_id ?? hdfcOrderId),
     status: String(response.status ?? ""),
@@ -133,7 +168,16 @@ export async function fetchHdfcOrderStatus(
 }
 
 export function isHdfcApiError(err: unknown): err is APIError {
-  return err instanceof APIError;
+  if (!err || typeof err !== "object") return false;
+  const name = (err as { name?: string }).name;
+  return (
+    name === "ApiError" ||
+    name === "TimeoutError" ||
+    name === "AuthenticationError" ||
+    name === "AuthorizationError" ||
+    name === "InvalidRequestError" ||
+    name === "InternalServerError"
+  );
 }
 
 export type HdfcOutcome = "paid" | "pending" | "failed" | "cancelled";

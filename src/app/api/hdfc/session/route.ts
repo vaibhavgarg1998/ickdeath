@@ -69,7 +69,8 @@ export async function POST(request: Request) {
 
     const phone = normalizePhone(order.contact.phone);
     const [firstName, ...rest] = order.contact.name.trim().split(/\s+/);
-    const session = await getHdfcClient().orderSession.create({
+    const client = await getHdfcClient();
+    const session = await client.orderSession.create({
       order_id: hdfcOrderId,
       amount: paiseToRupees(amountPaise),
       currency: "INR",
@@ -96,17 +97,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ paymentLink, orderId, hdfcOrderId });
   } catch (err) {
-    if (isHdfcApiError(err)) {
-      console.error("hdfc session failed", err.message);
-      return NextResponse.json(
-        { error: "Could not start HDFC payment" },
-        { status: 502 },
-      );
-    }
     console.error("hdfc session failed", err);
+    const message =
+      err instanceof Error && err.message
+        ? err.message
+        : "Could not start HDFC payment";
     return NextResponse.json(
-      { error: "Could not start HDFC payment" },
-      { status: 500 },
+      { error: message.slice(0, 300) },
+      { status: isHdfcApiError(err) ? 502 : 500 },
     );
   }
 }
