@@ -49,8 +49,8 @@ function buildPendingOrder(draft: CheckoutDraft): PlacedOrder {
 }
 
 function apiUrl(path: string): string {
-  const normalized = path.endsWith("/") ? path.slice(0, -1) : path;
-  return withBasePath(normalized);
+  const withSlash = path.endsWith("/") ? path : `${path}/`;
+  return withBasePath(withSlash);
 }
 
 /** Create a pending order, then send the customer to HDFC SmartGateway. */
@@ -64,12 +64,20 @@ export async function startHdfcCheckout(input: {
   }
   await createOrderInFirestore(pending);
 
-  const res = await fetch(apiUrl("/api/hdfc/session"), {
+  const res = await fetch(apiUrl("/api/hdfc/session/"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ orderId: pending.orderId }),
   });
-  const data = (await res.json()) as { paymentLink?: string; error?: string };
+  const raw = await res.text();
+  let data: { paymentLink?: string; error?: string } = {};
+  if (raw) {
+    try {
+      data = JSON.parse(raw) as typeof data;
+    } catch {
+      throw new Error("Could not start HDFC payment");
+    }
+  }
   if (!res.ok || !data.paymentLink) {
     throw new Error(data.error ?? "Could not start HDFC payment");
   }
