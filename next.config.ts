@@ -35,6 +35,21 @@ const hdfcTrace = [
   "util-deprecate",
 ].map((name) => `./node_modules/${name}/**/*`);
 
+// Next loads these with a dynamic path, so the file tracer never sees them.
+// On Vercel the function only has traced files, so a missing manifest makes
+// every Route Handler throw before it can return JSON (empty HTTP 500).
+const serverManifests = [
+  "./.next/BUILD_ID",
+  "./.next/routes-manifest.json",
+  "./.next/prerender-manifest.json",
+  "./.next/build-manifest.json",
+  "./.next/react-loadable-manifest.json",
+  "./.next/required-server-files.json",
+  "./.next/server/next-font-manifest.json",
+  "./.next/server/server-reference-manifest.json",
+  "./.next/server/prefetch-hints.json",
+];
+
 const nextConfig: NextConfig = {
   // Static export only for GitHub Pages (no API routes).
   // Local / Vercel builds keep Route Handlers for HDFC SmartGateway.
@@ -51,9 +66,10 @@ const nextConfig: NextConfig = {
   // loads them on demand so a bad package.json cannot crash function startup.
   serverExternalPackages: ["expresscheckout-nodejs", "winston"],
   outputFileTracingIncludes: {
-    "/api/hdfc/session": hdfcTrace,
-    "/api/hdfc/return": hdfcTrace,
-    "/api/hdfc/webhook": hdfcTrace,
+    "/**": serverManifests,
+    "/api/hdfc/session": [...hdfcTrace, ...serverManifests],
+    "/api/hdfc/return": [...hdfcTrace, ...serverManifests],
+    "/api/hdfc/webhook": [...hdfcTrace, ...serverManifests],
   },
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
