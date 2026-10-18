@@ -1,5 +1,4 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import type {
   OrderStatus,
@@ -189,8 +188,47 @@ export async function findOrdersForTracking(
   );
 }
 
+const FIREBASE_CERTS_URL =
+  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
+
+let firebaseCerts: { keys: Record<string, string>; expiresAt: number } | null = null;
+
+async function firebasePublicCerts(): Promise<Record<string, string>> {
+  if (firebaseCerts && firebaseCerts.expiresAt > Date.now()) return firebaseCerts.keys;
+  const response = await fetch(FIREBASE_CERTS_URL);
+  if (!response.ok) throw new Error("Could not load Firebase public keys");
+  const keys = (await response.json()) as Record<string, string>;
+  const maxAge = Number(/max-age=(\d+)/.exec(response.headers.get("cache-control") ?? "")?.[1] ?? 3600);
+  firebaseCerts = { keys, expiresAt: Date.now() + maxAge * 1000 };
+  return keys;
+}
+
+/**
+ * Verify a Firebase ID token without firebase-admin/auth.
+ * That entry loads jwks-rsa, which require()s the ESM-only jose package and
+ * crashes the Vercel function before checkout can respond.
+ */
 export async function verifyAdminIdToken(idToken: string) {
-  return getAuth(getFirebaseAdminApp()).verifyIdToken(idToken);
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID?.trim();
+  if (!projectId) {
+    throw new Error("Firebase Admin is not configured");
+  }
+
+  const { decodeProtectedHeader, importX509, jwtVerify } = await import("jose");
+  const kid = decodeProtectedHeader(idToken).kid;
+  if (!kid) throw new Error("Invalid admin token");
+  const cert = (await firebasePublicCerts())[kid];
+  if (!cert) throw new Error("Invalid admin token");
+
+  const { payload } = await jwtVerify(idToken, await importX509(cert, "RS256"), {
+    issuer: `https://securetoken.google.com/${projectId}`,
+    audience: projectId,
+    clockTolerance: 5,
+  });
+  if (typeof payload.sub !== "string" || !payload.sub) {
+    throw new Error("Invalid admin token");
+  }
+  return payload;
 }
 
 export async function getOrderAdmin(orderId: string): Promise<PlacedOrder | null> {
