@@ -2,12 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { CheckoutDraft } from "@/lib/orders";
-import {
-  cartTotalQty,
-  formatCartLines,
-  formatINR,
-  PRODUCT,
-} from "@/lib/product";
+import { formatCartLines, formatINR, PRODUCT } from "@/lib/product";
 import { NavRow, PriceBreakdownPanel } from "@/components/checkout/form-ui";
 
 type Props = {
@@ -17,7 +12,6 @@ type Props = {
 };
 
 export function StepSummary({ draft, onBack, onNext }: Props) {
-  const qty = cartTotalQty(draft.lines);
   const addr = draft.address;
 
   return (
@@ -59,7 +53,7 @@ export function StepSummary({ draft, onBack, onNext }: Props) {
       </dl>
 
       <PriceBreakdownPanel
-        quantity={qty}
+        lines={draft.lines}
         className="mt-6 border-t border-white/10 pt-5"
       />
 

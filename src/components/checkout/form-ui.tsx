@@ -6,6 +6,7 @@ import {
   formatINRExact,
   priceBreakdown,
   PRODUCT,
+  type CartLine,
 } from "@/lib/product";
 
 type FieldProps = {
@@ -156,14 +157,14 @@ export function NavRow({
 
 /** Product / GST / delivery / total. */
 export function PriceBreakdownPanel({
-  quantity,
+  lines,
   className = "",
 }: {
-  quantity: number;
+  lines: readonly CartLine[];
   className?: string;
 }) {
   const { basePaise, gstPaise, deliveryPaise, totalPaise } =
-    priceBreakdown(quantity);
+    priceBreakdown(lines);
 
   return (
     <dl
