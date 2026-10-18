@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   FULFILLMENT_STEPS,
+  formatTrackQueryInput,
   fulfillmentStepIndex,
   parseTrackQuery,
   paymentMethodLabel,
@@ -28,11 +36,13 @@ export function TrackOrderClient() {
   const initialQuery = (searchParams.get("order") ?? searchParams.get("q") ?? "")
     .trim();
 
-  const [query, setQuery] = useState(initialQuery);
+  const [query, setQuery] = useState(() => formatTrackQueryInput(initialQuery));
   const [orders, setOrders] = useState<PublicTrackedOrder[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const autoRan = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const cursorRef = useRef<number | null>(null);
 
   async function lookup(raw: string) {
     const parsed = parseTrackQuery(raw);
@@ -66,6 +76,24 @@ export function TrackOrderClient() {
     void lookup(initialQuery);
   }, [initialQuery]);
 
+  useEffect(() => {
+    const node = inputRef.current;
+    const cursor = cursorRef.current;
+    if (!node || cursor == null) return;
+    node.setSelectionRange(cursor, cursor);
+    cursorRef.current = null;
+  }, [query]);
+
+  function onQueryChange(e: ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    const cursor = e.target.selectionStart ?? raw.length;
+    const next = formatTrackQueryInput(raw, query);
+    const atEnd = cursor === raw.length;
+    const alnumBefore = raw.slice(0, cursor).replace(/[^A-Za-z0-9]/g, "").length;
+    cursorRef.current = atEnd ? next.length : indexAfterAlnum(next, alnumBefore);
+    setQuery(next);
+  }
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     void lookup(query);
@@ -89,12 +117,15 @@ export function TrackOrderClient() {
             Order ID or mobile number
           </span>
           <input
+            ref={inputRef}
             type="text"
             inputMode="text"
-            autoComplete="tel"
-            placeholder="ICK-20260904-1234 or 98XXXXXXXX"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            placeholder="Order ID or mobile number"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={onQueryChange}
             className="w-full rounded-lg border border-white/15 bg-bg px-3.5 py-3 font-[family-name:var(--font-inter)] text-sm text-white outline-none placeholder:text-white/30 focus:border-neon"
           />
         </label>
@@ -135,6 +166,16 @@ export function TrackOrderClient() {
       </Link>
     </div>
   );
+}
+
+function indexAfterAlnum(value: string, count: number): number {
+  if (count <= 0) return 0;
+  let seen = 0;
+  for (let i = 0; i < value.length; i++) {
+    if (/[A-Za-z0-9]/.test(value[i] ?? "")) seen++;
+    if (seen >= count) return i + 1;
+  }
+  return value.length;
 }
 
 function OrderCard({ order }: { order: PublicTrackedOrder }) {

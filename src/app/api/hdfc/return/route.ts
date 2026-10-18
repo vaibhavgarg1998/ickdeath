@@ -1,26 +1,52 @@
 import { NextResponse } from "next/server";
 import { fulfillHdfcPayment } from "@/lib/hdfc-fulfill";
-import { appUrl, hdfcOrderIdFromPayload } from "@/lib/hdfc-server";
+import { appUrl, hdfcOrderIdFromPayload, verifyHdfcReturnSignature } from "@/lib/hdfc-server";
 
 export const runtime = "nodejs";
 
-async function gatewayOrderId(request: Request): Promise<string | null> {
-  const url = new URL(request.url);
-  const fromQuery = url.searchParams.get("order_id") ?? url.searchParams.get("orderId");
-  const contentType = request.headers.get("content-type") ?? "";
+function addParams(target: Record<string, string>, source: Record<string, string>) {
+  for (const [key, value] of Object.entries(source)) {
+    if (value) target[key] = value;
+  }
+}
 
+async function readReturn(request: Request): Promise<{
+  orderId: string | null;
+  signatureOk: boolean;
+}> {
+  const url = new URL(request.url);
+  const params: Record<string, string> = {};
+  url.searchParams.forEach((value, key) => {
+    params[key] = value;
+  });
+
+  const contentType = request.headers.get("content-type") ?? "";
   try {
-    if (contentType.includes("application/json")) {
-      return hdfcOrderIdFromPayload(await request.json()) ?? fromQuery;
+    const raw = await request.text();
+    if (!raw) {
+      // Query string only.
+    } else if (contentType.includes("application/json")) {
+      const body = JSON.parse(raw) as Record<string, unknown>;
+      for (const [key, value] of Object.entries(body)) {
+        if (typeof value === "string") params[key] = value;
+      }
+    } else {
+      const form = new URLSearchParams(raw);
+      const parsed: Record<string, string> = {};
+      form.forEach((value, key) => {
+        parsed[key] = value;
+      });
+      addParams(params, parsed);
     }
-    const form = await request.formData();
-    const value = form.get("order_id") ?? form.get("orderId");
-    if (typeof value === "string" && value.trim()) return value.trim();
   } catch (err) {
     console.error("hdfc return body", err);
   }
 
-  return fromQuery?.trim() || null;
+  const orderId =
+    params.order_id?.trim() ||
+    params.orderId?.trim() ||
+    hdfcOrderIdFromPayload(params);
+  return { orderId, signatureOk: verifyHdfcReturnSignature(params) };
 }
 
 function redirectFor(
@@ -42,10 +68,12 @@ function redirectFor(
   return NextResponse.redirect(url, 303);
 }
 
-/** SmartGateway POSTs the customer here after the payment page. */
-export async function POST(request: Request) {
+async function handleReturn(request: Request) {
   try {
-    const hdfcOrderId = await gatewayOrderId(request);
+    const { orderId: hdfcOrderId, signatureOk } = await readReturn(request);
+    if (!signatureOk) {
+      console.error("hdfc return signature mismatch", hdfcOrderId);
+    }
     if (!hdfcOrderId) {
       return redirectFor(request, "failed", null);
     }
@@ -55,4 +83,13 @@ export async function POST(request: Request) {
     console.error("hdfc return failed", err);
     return redirectFor(request, "failed", null);
   }
+}
+
+/** SmartGateway sends the customer here after the payment page. */
+export async function POST(request: Request) {
+  return handleReturn(request);
+}
+
+export async function GET(request: Request) {
+  return handleReturn(request);
 }

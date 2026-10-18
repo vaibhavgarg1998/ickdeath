@@ -14,44 +14,40 @@ Use **Vercel** (or similar) so `/api/hdfc/*` works.
 
 ## 1. SmartGateway credentials
 
-From the HDFC SmartGateway dashboard (sandbox first):
+The basic-auth kit’s `config.json` maps like this:
 
-1. Merchant ID
-2. Payment page client ID
-3. JWE keys: key UUID, HDFC’s public key, and your private key  
-   If the dashboard gave you an API key instead, use `HDFC_API_KEY` and leave the JWE fields empty. JWE is used when both are set.
+| config.json | env |
+| --- | --- |
+| `MERCHANT_ID` | `HDFC_MERCHANT_ID` |
+| `PAYMENT_PAGE_CLIENT_ID` | `HDFC_PAYMENT_PAGE_CLIENT_ID` |
+| `API_KEY` | `HDFC_API_KEY` |
+| `BASE_URL` | `HDFC_BASE_URL` |
+| `RESPONSE_KEY` | `HDFC_RESPONSE_KEY` |
+| `ENABLE_LOGGING` | `HDFC_ENABLE_LOGGING` |
 
-Put them in `.env.local`:
+Leave the JWE fields empty unless you have real PEM files. Placeholder keys are ignored so the API key is used.
 
 ```bash
 HDFC_ENV=sandbox
 HDFC_MERCHANT_ID=
 HDFC_PAYMENT_PAGE_CLIENT_ID=
-HDFC_KEY_UUID=
-HDFC_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----\n"
-HDFC_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 HDFC_API_KEY=
-HDFC_WEBHOOK_USERNAME=
-HDFC_WEBHOOK_PASSWORD=
+HDFC_BASE_URL=https://smartgateway.hdfcuat.bank.in
+HDFC_RESPONSE_KEY=
+HDFC_ENABLE_LOGGING=false
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
-
-Keep the `\n` escapes when pasting PEM keys into one line.
 
 `NEXT_PUBLIC_SITE_URL` must be the public origin HDFC can redirect to. For local card testing, expose the app with a tunnel and set that HTTPS URL.
 
 Sandbox base URL: `https://smartgateway.hdfcuat.bank.in`  
 Production base URL: `https://smartgateway.hdfc.bank.in`
 
-## 2. Webhook
+## 2. Webhook (optional)
 
-In the dashboard: Payments → Settings → Webhooks.
+Checkout does not need this. The return URL already confirms the payment.
 
-- URL: `https://YOUR_DOMAIN/api/hdfc/webhook`
-- Username and password: the same values as `HDFC_WEBHOOK_USERNAME` and `HDFC_WEBHOOK_PASSWORD`
-- Enable order success and failure events
-
-The handler checks Basic auth, then calls Order Status again before changing the order. Return-URL handling does the same, so a missed webhook still confirms the payment when the customer comes back.
+If you later enable webhooks in the dashboard (Payments → Settings → Webhooks), set `HDFC_WEBHOOK_USERNAME` and `HDFC_WEBHOOK_PASSWORD` to the same username and password, and point the URL at `https://YOUR_DOMAIN/api/hdfc/webhook`.
 
 ## 3. Firebase Admin
 
