@@ -26,38 +26,59 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
+type PaymentNotice = {
+  step: StepId;
+  error: string;
+};
+
+function paymentNoticeFromSearch(search: string): PaymentNotice | null {
+  const payment = new URLSearchParams(search).get("payment");
+  if (payment === "cancelled") {
+    return { step: "payment", error: "Payment was cancelled. You can try again." };
+  }
+  if (payment === "pending") {
+    return {
+      step: "payment",
+      error:
+        "Payment is still processing. We'll confirm this order shortly — don't pay again yet.",
+    };
+  }
+  if (payment === "review") {
+    return {
+      step: "payment",
+      error:
+        "We received a payment we couldn't match. Message us on WhatsApp with your order ID before paying again.",
+    };
+  }
+  if (payment === "failed") {
+    return { step: "payment", error: "Payment failed. You can try again." };
+  }
+  return null;
+}
+
+function subscribeNoop() {
+  return () => {};
+}
+
 export function CheckoutWizard() {
   const draft = useSyncExternalStore(
     subscribeCheckoutDraft,
     getCheckoutDraftSnapshot,
     getCheckoutDraftServerSnapshot,
   );
-  const [step, setStep] = useState<StepId>("quantity");
+  const paymentNotice = useSyncExternalStore(
+    subscribeNoop,
+    () => paymentNoticeFromSearch(window.location.search),
+    () => null,
+  );
+  const [stepOverride, setStep] = useState<StepId | null>(null);
+  const [errorOverride, setError] = useState<string | null | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const step = stepOverride ?? paymentNotice?.step ?? "quantity";
+  const error = errorOverride !== undefined ? errorOverride : (paymentNotice?.error ?? null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const payment = params.get("payment");
-    if (payment === "cancelled") {
-      setStep("payment");
-      setError("Payment was cancelled. You can try again.");
-    } else if (payment === "pending") {
-      setStep("payment");
-      setError(
-        "Payment is still processing. We'll confirm this order shortly — don't pay again yet.",
-      );
-    } else if (payment === "review") {
-      setStep("payment");
-      setError(
-        "We received a payment we couldn't match. Message us on WhatsApp with your order ID before paying again.",
-      );
-    } else if (payment === "failed") {
-      setStep("payment");
-      setError("Payment failed. You can try again.");
-    }
-
-    const edition = params.get("edition");
+    const edition = new URLSearchParams(window.location.search).get("edition");
     if (!isColorwayId(edition)) return;
 
     const current = getCheckoutDraftSnapshot();
