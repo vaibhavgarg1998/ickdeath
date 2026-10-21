@@ -84,7 +84,7 @@ export async function handleInboundWhatsApp(message: InboundMessage): Promise<vo
     await setWhatsAppSessionAdmin({ waId: from, autoReply: false });
     await sendWhatsAppText({
       to: from,
-      body: "Got it — a person from ICK DEATH will reply here. You can also email hello@ickdeath.com.\n\nIf you share an order ID (ICK-…) I'll still look it up instantly.",
+      body: "Got it — a person from ICK DEATH will reply here. You can also email contact@ickdeath.com.\n\nIf you share an order ID (ICK-…) I'll still look it up instantly.",
     });
     return;
   }
