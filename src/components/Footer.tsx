@@ -34,7 +34,7 @@ export function Footer() {
             Terms & Privacy
           </Link>
           <a
-            href="mailto:hello@ickdeath.com"
+            href="mailto:contact@ickdeath.com"
             className="transition-colors hover:text-neon"
           >
             Contact Us
