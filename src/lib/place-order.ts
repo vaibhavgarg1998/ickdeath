@@ -5,7 +5,7 @@ import {
   type PlacedOrder,
 } from "@/lib/orders";
 import { isFirebaseConfigured } from "@/lib/firebase";
-import { createOrderInFirestore } from "@/lib/orders-db";
+import { createOrderInFirestore, getOrderFromFirestore } from "@/lib/orders-db";
 import { withBasePath } from "@/lib/paths";
 
 function whatsappBusinessNumber(): string {
@@ -57,12 +57,26 @@ function apiUrl(path: string): string {
 export async function startHdfcCheckout(input: {
   draft: CheckoutDraft;
 }): Promise<void> {
-  const pending = buildPendingOrder(input.draft);
-
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase is not configured");
   }
-  await createOrderInFirestore(pending);
+
+  let pending: PlacedOrder | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = buildPendingOrder(input.draft);
+    const existing = await getOrderFromFirestore(candidate.orderId);
+    if (existing) continue;
+    try {
+      await createOrderInFirestore(candidate);
+      pending = candidate;
+      break;
+    } catch (err) {
+      if (attempt === 4) throw err;
+    }
+  }
+  if (!pending) {
+    throw new Error("Could not allocate an order id");
+  }
 
   const res = await fetch(apiUrl("/api/hdfc/session/"), {
     method: "POST",

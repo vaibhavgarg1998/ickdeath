@@ -85,19 +85,31 @@ export type PlacedOrder = CheckoutDraft & {
   orderStatus: OrderStatus;
   /** SmartGateway order id (alphanumeric, separate from the customer-facing ICK id). */
   hdfcOrderId?: string;
+  /** Transaction id from the Order Status API. Receipts use this, not the browser redirect. */
   hdfcTxnId?: string;
+  /** Last Order Status API status stored for this order. */
+  hdfcStatus?: string;
+  /** Amount (paise) returned by the Order Status API. */
+  hdfcAmountPaise?: number;
+  /** Outcome of the last status check. A receipt is shown only when this is paid. */
+  hdfcResult?: "paid" | "pending" | "failed" | "cancelled" | "mismatch" | "duplicate";
   /** Kept for orders placed before the HDFC switch. */
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   whatsapp?: OrderWhatsApp;
 };
 
+function randomOrderSuffix(): string {
+  const buf = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(buf);
+  return String(1000 + (buf[0]! % 9000));
+}
+
 export function generateOrderId(now = new Date()): string {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  return `ICK-${y}${m}${d}-${rand}`;
+  return `ICK-${y}${m}${d}-${randomOrderSuffix()}`;
 }
 
 export function isNormalizedMobile(phone: string): boolean {

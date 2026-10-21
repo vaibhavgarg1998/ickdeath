@@ -64,8 +64,25 @@ export async function POST(request: Request) {
     }
 
     const amountPaise = cartTotalPaise(lines);
-    const hdfcOrderId = generateHdfcOrderId();
-    await saveHdfcPaymentAdmin({ hdfcOrderId, orderId, amountPaise });
+    let hdfcOrderId = "";
+    let reserved = false;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      hdfcOrderId = generateHdfcOrderId();
+      const saved = await saveHdfcPaymentAdmin({ hdfcOrderId, orderId, amountPaise });
+      if (saved.ok) {
+        reserved = true;
+        break;
+      }
+      if (saved.reason === "paid") {
+        return NextResponse.json({ error: "This order is already paid" }, { status: 409 });
+      }
+      if (saved.reason === "missing") {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+    }
+    if (!reserved) {
+      return NextResponse.json({ error: "Could not start HDFC payment" }, { status: 500 });
+    }
 
     const phone = normalizePhone(order.contact.phone);
     const [firstName, ...rest] = order.contact.name.trim().split(/\s+/);

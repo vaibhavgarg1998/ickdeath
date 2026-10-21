@@ -72,17 +72,27 @@ function jweReady(): boolean {
   return Boolean(keyId && isRealPem(publicKey) && isRealPem(privateKey));
 }
 
+/** `production`, `prod`, and `live` all use the live SmartGateway host. */
+function isHdfcProduction(): boolean {
+  const env = (process.env.HDFC_ENV ?? "").trim().toLowerCase();
+  return env === "production" || env === "prod" || env === "live";
+}
+
 function resolveBaseUrl(): string {
   const configured = process.env.HDFC_BASE_URL?.trim().replace(/\/$/, "");
-  if (!configured) {
-    return process.env.HDFC_ENV === "production" ? PRODUCTION_BASE_URL : SANDBOX_BASE_URL;
+  if (isHdfcProduction()) {
+    if (configured && configured !== PRODUCTION_BASE_URL) {
+      throw new HdfcConfigError(
+        "HDFC_BASE_URL must be https://smartgateway.hdfc.bank.in when HDFC_ENV is production",
+      );
+    }
+    return PRODUCTION_BASE_URL;
   }
-  if (configured !== SANDBOX_BASE_URL && configured !== PRODUCTION_BASE_URL) {
-    throw new HdfcConfigError(
-      "HDFC_BASE_URL must be the SmartGateway sandbox or production URL",
-    );
-  }
-  return configured;
+  if (!configured || configured === SANDBOX_BASE_URL) return SANDBOX_BASE_URL;
+  if (configured === PRODUCTION_BASE_URL) return configured;
+  throw new HdfcConfigError(
+    "HDFC_BASE_URL must be the SmartGateway sandbox or production URL",
+  );
 }
 
 /** Merchant id + payment page client id, and either JWE keys or an API key. */
@@ -152,18 +162,52 @@ export type HdfcGatewayStatus = {
   status: string;
   amountPaise: number | null;
   txnId: string;
+  /** Our order id, echoed by SmartGateway in udf6. */
+  merchantOrderId: string;
 };
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
+function firstString(values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function gatewayResponseRecord(response: Record<string, unknown>): Record<string, unknown> | null {
+  const raw = response.payment_gateway_response;
+  if (typeof raw === "string") {
+    try {
+      return asRecord(JSON.parse(raw) as unknown);
+    } catch {
+      return null;
+    }
+  }
+  return asRecord(raw);
+}
 
 export async function fetchHdfcOrderStatus(
   hdfcOrderId: string,
 ): Promise<HdfcGatewayStatus> {
   const client = await getHdfcClient();
   const response = await client.order.status(hdfcOrderId);
+  const gateway = gatewayResponseRecord(response);
   return {
     orderId: String(response.order_id ?? hdfcOrderId),
     status: String(response.status ?? ""),
     amountPaise: rupeesToPaise(response.amount),
-    txnId: String(response.txn_id ?? ""),
+    txnId: firstString([
+      response.txn_id,
+      response.txnId,
+      gateway?.epg_txn_id,
+      gateway?.txn_id,
+      gateway?.rrn,
+    ]),
+    merchantOrderId: firstString([response.udf6]),
   };
 }
 
@@ -197,21 +241,36 @@ export function classifyHdfcStatus(status: string): HdfcOutcome {
   }
 }
 
+/**
+ * Origin registered with HDFC.
+ * Production always uses NEXT_PUBLIC_SITE_URL (HTTPS).
+ * A localhost request uses its own host only while HDFC_ENV is sandbox,
+ * so a Host header cannot point a live bank redirect at another site.
+ */
 export function siteOrigin(request: Request): string {
-  // Come back to the host that started checkout. A fixed production URL
-  // sends local payments to ickdeath.com, which 404s until this route is deployed.
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  if (host) {
-    const forwarded = request.headers.get("x-forwarded-proto");
-    const proto =
-      forwarded ??
-      (host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https");
-    return `${proto}://${host}`;
+  const rawHost = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "")
+    .split(",")[0]
+    ?.trim() ?? "";
+  const hostname = rawHost.split(":")[0] ?? "";
+  if (!isHdfcProduction() && (hostname === "localhost" || hostname === "127.0.0.1")) {
+    return `http://${rawHost}`;
   }
 
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
-  if (configured) return configured;
-  throw new HdfcConfigError("Set NEXT_PUBLIC_SITE_URL so HDFC can redirect back");
+  if (!configured) {
+    throw new HdfcConfigError("Set NEXT_PUBLIC_SITE_URL so HDFC can redirect back");
+  }
+
+  let url: URL;
+  try {
+    url = new URL(configured);
+  } catch {
+    throw new HdfcConfigError("NEXT_PUBLIC_SITE_URL is not a valid URL");
+  }
+  if (url.protocol !== "https:") {
+    throw new HdfcConfigError("NEXT_PUBLIC_SITE_URL must use HTTPS");
+  }
+  return url.origin;
 }
 
 function withBase(path: string): string {
