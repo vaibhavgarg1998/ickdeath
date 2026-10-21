@@ -1,13 +1,14 @@
 import {
+  finalizeHdfcPaidAdmin,
   getHdfcPaymentAdmin,
   getOrderAdmin,
   isFirebaseAdminConfigured,
-  markOrderPaidAdmin,
-  markOrderPaymentStatusAdmin,
+  recordHdfcAttemptAdmin,
 } from "@/lib/firebase-admin";
 import {
   classifyHdfcStatus,
   fetchHdfcOrderStatus,
+  type HdfcGatewayStatus,
   type HdfcOutcome,
 } from "@/lib/hdfc-server";
 import { formatOrderItems, PRODUCT } from "@/lib/product";
@@ -15,13 +16,19 @@ import { notifyOrderWhatsApp } from "@/lib/whatsapp-notify";
 import type { PlacedOrder } from "@/lib/orders";
 
 export type HdfcFulfillResult = {
-  outcome: HdfcOutcome | "mismatch";
+  outcome: HdfcOutcome | "mismatch" | "duplicate";
   orderId: string | null;
 };
 
+function sameId(a: string, b: string): boolean {
+  return a.trim().toUpperCase() === b.trim().toUpperCase();
+}
+
 /**
- * Confirm a SmartGateway order with the Order Status API, then mark our order.
- * Amount and order id must match what we stored before redirecting the customer.
+ * Confirm a SmartGateway order with the Order Status API, then store that
+ * response. The browser return payload is not trusted. A receipt is written
+ * only when the status is CHARGED and the order id, merchant order id, and
+ * amount all match the row created before the customer left for HDFC.
  */
 export async function fulfillHdfcPayment(hdfcOrderId: string): Promise<HdfcFulfillResult> {
   if (!isFirebaseAdminConfigured()) {
@@ -35,70 +42,110 @@ export async function fulfillHdfcPayment(hdfcOrderId: string): Promise<HdfcFulfi
   if (!order) return { outcome: "failed", orderId: payment.orderId };
 
   const gateway = await fetchHdfcOrderStatus(hdfcOrderId);
-  if (gateway.orderId && gateway.orderId !== hdfcOrderId) {
-    console.error("hdfc order id mismatch", { hdfcOrderId, gateway: gateway.orderId });
+  const orderIdMatched = !gateway.orderId || sameId(gateway.orderId, hdfcOrderId);
+  const merchantMatched =
+    !gateway.merchantOrderId || gateway.merchantOrderId === payment.orderId;
+  const amountPresent = gateway.amountPaise != null;
+  const amountMatched =
+    amountPresent &&
+    gateway.amountPaise === payment.amountPaise &&
+    gateway.amountPaise === order.amountPaise;
+
+  if (!orderIdMatched || !merchantMatched || (amountPresent && !amountMatched)) {
+    console.error("hdfc response mismatch", {
+      orderId: order.orderId,
+      hdfcOrderId,
+      gatewayOrderId: gateway.orderId,
+      merchantOrderId: gateway.merchantOrderId,
+      expected: payment.amountPaise,
+      stored: order.amountPaise,
+      charged: gateway.amountPaise,
+    });
+    await recordHdfcAttemptAdmin({
+      orderId: order.orderId,
+      hdfcOrderId,
+      txnId: gateway.txnId,
+      gatewayStatus: gateway.status,
+      gatewayAmountPaise: gateway.amountPaise,
+      result: "mismatch",
+      orderIdMatched,
+      amountMatched,
+    });
     return { outcome: "mismatch", orderId: order.orderId };
   }
 
   const outcome = classifyHdfcStatus(gateway.status);
 
   if (outcome === "paid") {
-    if (gateway.amountPaise !== payment.amountPaise || gateway.amountPaise !== order.amountPaise) {
-      console.error("hdfc amount mismatch", {
+    if (!amountMatched || gateway.amountPaise == null) {
+      await recordHdfcAttemptAdmin({
         orderId: order.orderId,
-        expected: payment.amountPaise,
-        stored: order.amountPaise,
-        charged: gateway.amountPaise,
+        hdfcOrderId,
+        txnId: gateway.txnId,
+        gatewayStatus: gateway.status,
+        gatewayAmountPaise: gateway.amountPaise,
+        result: "mismatch",
+        orderIdMatched,
+        amountMatched: false,
       });
       return { outcome: "mismatch", orderId: order.orderId };
     }
 
-    if (order.paymentStatus === "paid") {
-      if (order.hdfcOrderId && order.hdfcOrderId !== hdfcOrderId) {
-        console.error("hdfc duplicate charge", {
-          orderId: order.orderId,
-          hdfcOrderId,
-        });
-      }
-      return { outcome: "paid", orderId: order.orderId };
-    }
-
-    const paid = {
-      ...order,
-      paymentMethod: "hdfc" as const,
-      paymentStatus: "paid" as const,
+    const commit = await finalizeHdfcPaidAdmin({
+      order,
       hdfcOrderId,
-      hdfcTxnId: gateway.txnId || undefined,
-    };
-    await markOrderPaidAdmin({
-      order: paid,
-      hdfcOrderId,
-      hdfcTxnId: gateway.txnId || undefined,
+      txnId: gateway.txnId,
+      gatewayStatus: gateway.status,
+      gatewayAmountPaise: gateway.amountPaise,
     });
 
-    try {
-      await notifyOrderWhatsApp({ order: paid, event: "confirmed" });
-    } catch (err) {
-      console.error("whatsapp confirmed failed", err);
+    if (commit === "duplicate") {
+      console.error("hdfc duplicate charge", { orderId: order.orderId, hdfcOrderId });
+      return { outcome: "duplicate", orderId: order.orderId };
     }
-    await postOrdersWebhook(paid);
+
+    if (commit === "created") {
+      const paid = paidOrder(order, hdfcOrderId, gateway);
+      try {
+        await notifyOrderWhatsApp({ order: paid, event: "confirmed" });
+      } catch (err) {
+        console.error("whatsapp confirmed failed", err);
+      }
+      await postOrdersWebhook(paid);
+    }
 
     return { outcome: "paid", orderId: order.orderId };
   }
 
-  const latestAttempt = !order.hdfcOrderId || order.hdfcOrderId === hdfcOrderId;
-  if (
-    (outcome === "failed" || outcome === "cancelled") &&
-    latestAttempt &&
-    order.paymentStatus !== "paid"
-  ) {
-    await markOrderPaymentStatusAdmin({
-      orderId: order.orderId,
-      paymentStatus: "failed",
-    });
-  }
+  await recordHdfcAttemptAdmin({
+    orderId: order.orderId,
+    hdfcOrderId,
+    txnId: gateway.txnId,
+    gatewayStatus: gateway.status,
+    gatewayAmountPaise: gateway.amountPaise,
+    result: outcome,
+    orderIdMatched,
+    amountMatched,
+  });
 
   return { outcome, orderId: order.orderId };
+}
+
+function paidOrder(
+  order: PlacedOrder,
+  hdfcOrderId: string,
+  gateway: HdfcGatewayStatus,
+): PlacedOrder {
+  return {
+    ...order,
+    paymentMethod: "hdfc",
+    paymentStatus: "paid",
+    hdfcOrderId,
+    hdfcStatus: gateway.status,
+    hdfcAmountPaise: gateway.amountPaise ?? order.amountPaise,
+    hdfcResult: "paid",
+    ...(gateway.txnId ? { hdfcTxnId: gateway.txnId } : {}),
+  };
 }
 
 async function postOrdersWebhook(order: PlacedOrder): Promise<void> {

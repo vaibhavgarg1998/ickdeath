@@ -66,6 +66,8 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   // Keep POST webhooks (WhatsApp) from being 308'd to a trailing slash.
   skipTrailingSlashRedirect: true,
+  // Do not write AGENTS.md / CLAUDE.md into the repo on `next dev`.
+  agentRules: false,
   // Keep the HDFC SDK and winston as real node_modules files. The route
   // loads them on demand so a bad package.json cannot crash function startup.
   serverExternalPackages: ["expresscheckout-nodejs", "winston"],

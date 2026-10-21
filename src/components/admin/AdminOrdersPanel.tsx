@@ -300,6 +300,9 @@ function OrderDetail({
         <Row label="Payment method" className="capitalize">
           {paymentMethodLabel(order.paymentMethod)}
         </Row>
+        {order.hdfcOrderId ? <Row label="HDFC order">{order.hdfcOrderId}</Row> : null}
+        {order.hdfcTxnId ? <Row label="HDFC txn">{order.hdfcTxnId}</Row> : null}
+        {order.hdfcStatus ? <Row label="HDFC status">{order.hdfcStatus}</Row> : null}
         <Row label="Customer">
           {order.contact.name}
           <br />

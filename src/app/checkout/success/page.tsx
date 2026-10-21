@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { CheckoutSuccessClient } from "./SuccessClient";
+import { PaymentResponse } from "@/components/checkout/PaymentResponse";
 
 export const metadata: Metadata = {
-  title: "Order confirmed — ICK DEATH",
-  description:
-    "Your ICK DEATH order was placed. Track updates on WhatsApp.",
+  title: "Payment response — ICK DEATH",
+  description: "HDFC SmartGateway payment result, amount, and transaction id.",
 };
 
+/** Same checks as /checkout/response so a success URL alone is not a receipt. */
 export default function CheckoutSuccessPage() {
-  return <CheckoutSuccessClient />;
+  return <PaymentResponse />;
 }
