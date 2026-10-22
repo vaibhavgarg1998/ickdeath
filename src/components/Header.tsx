@@ -5,7 +5,7 @@ import Link from "next/link";
 import { BuyNowButton } from "@/components/BuyNowButton";
 import { Logo } from "@/components/Logo";
 import { trackButtonClick, type TrackedButtonId } from "@/lib/analytics";
-import { TRACK_PATH } from "@/lib/buy";
+import { ABOUT_PATH, CONTACT_PATH, TRACK_PATH } from "@/lib/buy";
 import { withBasePath } from "@/lib/paths";
 
 const links: {
@@ -14,9 +14,14 @@ const links: {
   trackId: TrackedButtonId;
 }[] = [
   {
-    href: `${withBasePath("/")}#product`,
+    href: ABOUT_PATH,
     label: "About Us",
     trackId: "nav_product",
+  },
+  {
+    href: CONTACT_PATH,
+    label: "Contact Us",
+    trackId: "nav_contact",
   },
   {
     href: `${withBasePath("/")}#how-to-use`,
@@ -65,27 +70,13 @@ export function Header() {
         </Link>
 
         <nav className="hidden items-center gap-8 font-[family-name:var(--font-inter)] text-base font-medium text-text-soft md:flex lg:gap-12 lg:text-lg">
-          {links.map((link) =>
-            link.href === TRACK_PATH ? (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="transition-colors hover:text-neon"
-                onClick={() => trackButtonClick(link.trackId)}
-              >
-                {link.label}
-              </Link>
-            ) : (
-              <a
-                key={link.href}
-                href={link.href}
-                className="transition-colors hover:text-neon"
-                onClick={() => trackButtonClick(link.trackId)}
-              >
-                {link.label}
-              </a>
-            ),
-          )}
+          {links.map((link) => (
+            <NavLink
+              key={link.href}
+              link={link}
+              className="transition-colors hover:text-neon"
+            />
+          ))}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -131,36 +122,47 @@ export function Header() {
           className="border-t border-white/10 bg-bg px-4 pb-5 pt-3 md:hidden"
         >
           <nav className="flex flex-col gap-1 font-[family-name:var(--font-inter)] text-lg font-medium text-text-soft">
-            {links.map((link) =>
-              link.href === TRACK_PATH ? (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="border-b border-white/10 py-3.5 transition-colors hover:text-neon"
-                  onClick={() => {
-                    trackButtonClick(link.trackId);
-                    closeMenu();
-                  }}
-                >
-                  {link.label}
-                </Link>
-              ) : (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="border-b border-white/10 py-3.5 transition-colors hover:text-neon"
-                  onClick={() => {
-                    trackButtonClick(link.trackId);
-                    closeMenu();
-                  }}
-                >
-                  {link.label}
-                </a>
-              ),
-            )}
+            {links.map((link) => (
+              <NavLink
+                key={link.href}
+                link={link}
+                className="border-b border-white/10 py-3.5 transition-colors hover:text-neon"
+                onNavigate={closeMenu}
+              />
+            ))}
           </nav>
         </div>
       ) : null}
     </header>
+  );
+}
+
+function NavLink({
+  link,
+  className,
+  onNavigate,
+}: {
+  link: (typeof links)[number];
+  className: string;
+  onNavigate?: () => void;
+}) {
+  const classNames = className;
+  const onClick = () => {
+    trackButtonClick(link.trackId);
+    onNavigate?.();
+  };
+
+  if (link.href.includes("#")) {
+    return (
+      <a href={link.href} className={classNames} onClick={onClick}>
+        {link.label}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={link.href} className={classNames} onClick={onClick}>
+      {link.label}
+    </Link>
   );
 }
