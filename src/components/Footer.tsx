@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AssetImage } from "@/components/AssetImage";
 import { Logo } from "@/components/Logo";
-import { TERMS_PATH } from "@/lib/buy";
+import { ABOUT_PATH, CONTACT_PATH, TERMS_PATH } from "@/lib/buy";
 
 const socials = [
   {
@@ -29,16 +29,16 @@ export function Footer() {
           <Logo className="size-full" />
         </div>
 
-        <div className="flex flex-col items-center gap-4 text-center font-[family-name:var(--font-inter)] text-base font-semibold text-white sm:gap-6 sm:text-lg md:flex-row md:gap-12 lg:gap-[150px] lg:text-[22px]">
+        <div className="flex flex-col items-center gap-4 text-center font-[family-name:var(--font-inter)] text-base font-semibold text-white sm:gap-6 sm:text-lg md:flex-row md:gap-10 lg:gap-16 lg:text-[22px]">
+          <Link href={ABOUT_PATH} className="transition-colors hover:text-neon">
+            About Us
+          </Link>
+          <Link href={CONTACT_PATH} className="transition-colors hover:text-neon">
+            Contact Us
+          </Link>
           <Link href={TERMS_PATH} className="transition-colors hover:text-neon">
             Terms & Privacy
           </Link>
-          <a
-            href="mailto:contact@ickdeath.com"
-            className="transition-colors hover:text-neon"
-          >
-            Contact Us
-          </a>
         </div>
 
         <div className="flex items-center gap-5 sm:gap-6">
@@ -63,7 +63,7 @@ export function Footer() {
       </div>
 
       <p className="px-4 pb-8 text-center font-[family-name:var(--font-inter)] text-xs leading-relaxed text-text-dim sm:text-sm md:px-24 md:text-base lg:px-32">
-        All Rights Reserved. Copyright 2026-27 ICK India Pvt. Ltd.,
+        All Rights Reserved. Copyright 2026-27 ICK India Pvt. Ltd.
       </p>
     </footer>
   );

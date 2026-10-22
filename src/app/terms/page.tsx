@@ -3,9 +3,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions — ICK DEATH",
+  title: "Terms & Privacy — ICK DEATH",
   description:
-    "Terms & Conditions for ICK DEATH Seat Safe Tabs / Toilet Seat Lifter sold by ICK India Pvt. Ltd.",
+    "Terms, privacy, pricing, cancellation, and refund policy for ICK DEATH Seat Safe Tabs sold by ICK India Pvt. Ltd.",
 };
 
 export default function TermsPage() {
@@ -20,7 +20,7 @@ export default function TermsPage() {
             ← Back to product
           </Link>
           <p className="font-[family-name:var(--font-bebas)] text-xl tracking-wide text-neon">
-            TERMS & CONDITIONS
+            TERMS & PRIVACY
           </p>
         </div>
       </header>
@@ -28,7 +28,7 @@ export default function TermsPage() {
       <main className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-0 sm:py-12">
         <article className="rounded-2xl border border-neon/40 bg-bg-elevated p-6 sm:p-10">
           <h1 className="font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-white sm:text-4xl">
-            Terms & Conditions
+            Terms & Privacy
           </h1>
 
           <Section title="1. Product Usage">
@@ -78,7 +78,69 @@ export default function TermsPage() {
             </ul>
           </Section>
 
-          <Section title="4. Shipping & Delivery">
+          <Section title="4. Pricing">
+            <ul>
+              <li>
+                Prices on ickdeath.com are in Indian Rupees. The product price
+                includes GST.
+              </li>
+              <li>
+                Delivery is charged per pack and is shown with the product
+                price before you pay.
+              </li>
+              <li>
+                The amount you pay is the total shown at checkout. That total
+                is the amount sent to HDFC SmartGateway.
+              </li>
+              <li>
+                If a price is shown by mistake, we may cancel the order before
+                it ships and refund the amount paid.
+              </li>
+            </ul>
+          </Section>
+
+          <Section title="5. Cancellation">
+            <ul>
+              <li>
+                You can ask us to cancel an order only before it has shipped.
+                Email{" "}
+                <a
+                  href="mailto:contact@ickdeath.com"
+                  className="text-neon underline-offset-2 hover:underline"
+                >
+                  contact@ickdeath.com
+                </a>{" "}
+                with your order ID.
+              </li>
+              <li>
+                Once an order has shipped, it cannot be cancelled.
+              </li>
+              <li>
+                We may cancel an order before it ships if the product is out of
+                stock, the price was wrong, or the order looks fraudulent. We
+                will tell you and refund the amount paid.
+              </li>
+            </ul>
+          </Section>
+
+          <Section title="6. Refund">
+            <ul>
+              <li>
+                We do not provide a refund after an order has shipped.
+              </li>
+              <li>
+                A refund is made only when an order is cancelled before it
+                ships, or when a payment is taken for an order we do not
+                accept.
+              </li>
+              <li>
+                Refunds are sent to the original payment method. The time they
+                take depends on HDFC and your bank.
+              </li>
+            </ul>
+          </Section>
+
+          <Section title="7. Shipping & Delivery">
             <ul>
               <li>
                 Delivery timelines are estimates and may vary depending on
@@ -96,7 +158,7 @@ export default function TermsPage() {
             </ul>
           </Section>
 
-          <Section title="5. Limitation of Liability">
+          <Section title="8. Limitation of Liability">
             <ul>
               <li>
                 The seller’s liability shall be limited to the purchase price of
@@ -110,7 +172,7 @@ export default function TermsPage() {
             </ul>
           </Section>
 
-          <Section title="6. Product Information">
+          <Section title="9. Product Information">
             <ul>
               <li>
                 Product images are for illustration purposes only. Actual color,
@@ -124,7 +186,7 @@ export default function TermsPage() {
             </ul>
           </Section>
 
-          <Section title="7. Privacy">
+          <Section title="10. Privacy">
             <ul>
               <li>
                 Customer information collected during purchase will be used only
@@ -139,10 +201,10 @@ export default function TermsPage() {
             </ul>
           </Section>
 
-          <Section title="8. Governing Law">
+          <Section title="11. Governing Law">
             <ul>
               <li>
-                These Terms & Conditions shall be governed by and interpreted in
+                These terms shall be governed by and interpreted in
                 accordance with the laws of India.
               </li>
               <li>
@@ -152,7 +214,7 @@ export default function TermsPage() {
             </ul>
           </Section>
 
-          <Section title="9. Contact Us">
+          <Section title="12. Contact Us">
             <p>
               For any questions regarding your order or product support, please
               contact our customer support team at{" "}
