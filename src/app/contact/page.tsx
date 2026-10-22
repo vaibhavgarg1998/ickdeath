@@ -36,7 +36,7 @@ export default function ContactPage() {
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           <a
-            href="https://www.google.com/maps/search/?api=1&query=G3%2C%20Laxman%20Colony%2C%20Sodala%20Shyam%20Nagar%2C%20Jaipur%20302019"
+            href="https://www.google.com/maps/search/?api=1&query=F.No.%20G-3%2C%20Plot%20No.%20A-1%2C%20Nandini%20Apartments%2C%20Laxman%20Path%2C%20Sodala%2C%20Shyam%20Nagar%2C%20Jaipur%20302019"
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-2xl border border-white/10 bg-bg-elevated p-5 transition-colors hover:border-neon sm:col-span-2"
@@ -45,7 +45,9 @@ export default function ContactPage() {
               Address
             </p>
             <p className="mt-3 font-[family-name:var(--font-ibm-plex)] text-lg leading-relaxed text-white sm:text-xl">
-              G3, Laxman Colony, Sodala Shyam Nagar
+              F.No. G-3, Plot No. A-1, Nandini Apartments
+              <br />
+              Laxman Path, Sodala, Shyam Nagar
               <br />
               Jaipur - 302019
             </p>
