@@ -5,7 +5,7 @@ import { ABOUT_PATH, CONTACT_PATH, TERMS_PATH } from "@/lib/buy";
 
 const socials = [
   {
-    href: "https://instagram.com",
+    href: "https://www.instagram.com/ickdeath",
     src: "/assets/icon-instagram.svg",
     label: "Instagram",
   },
