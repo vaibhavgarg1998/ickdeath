@@ -54,17 +54,18 @@ export function RestaurantSubscription() {
     >
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:gap-16">
         <div>
-          <p className="font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-[0.2em] text-neon">
+          <p className="inline-block rounded-full border border-neon/50 bg-neon/15 px-3 py-1 font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-[0.2em] text-neon">
             For restaurant owners
           </p>
-          <h2 className="mt-3 font-[family-name:var(--font-bebas)] text-[clamp(2rem,7vw,5.5rem)] leading-[1.05]">
-            <span className="text-white">MONTHLY </span>
-            <span className="text-neon">SUBSCRIPTION</span>
+          <h2 className="mt-3 max-w-xl font-[family-name:var(--font-bebas)] text-[clamp(1.75rem,4.5vw,3.5rem)] leading-[1.05] tracking-wide">
+            <span className="text-white">Get ICKDEATH covered with </span>
+            <span className="text-neon">monthly subscription</span>
           </h2>
           <p className="mt-4 max-w-xl font-[family-name:var(--font-ibm-plex)] text-base leading-relaxed text-text-soft sm:text-lg">
-            Same seats, every service. Leave your details and we&apos;ll set up
-            a monthly restock of Seat Safe Tabs for your restaurant. We confirm
-            the plan on WhatsApp or email before anything ships.
+            Don&apos;t let your customers touch the dirty toilet seat with bare
+            hands — be a Touch Generation restaurant. Please fill in your
+            details and Team ICKDEATH will connect with you to make you a No
+            Touch Generation restaurant.
           </p>
         </div>
 
