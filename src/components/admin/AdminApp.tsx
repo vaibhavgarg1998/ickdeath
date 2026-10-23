@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
 import { AdminAnalyticsPanel } from "@/components/admin/AdminAnalyticsPanel";
 import { AdminOrdersPanel } from "@/components/admin/AdminOrdersPanel";
+import { AdminRestaurantsPanel } from "@/components/admin/AdminRestaurantsPanel";
 import {
   AdminLoginForm,
   AdminMessage,
@@ -59,7 +60,13 @@ export function AdminApp() {
         </button>
       </div>
 
-      {tab === "orders" ? <AdminOrdersPanel /> : <AdminAnalyticsPanel />}
+      {tab === "orders" ? (
+        <AdminOrdersPanel />
+      ) : tab === "restaurants" ? (
+        <AdminRestaurantsPanel />
+      ) : (
+        <AdminAnalyticsPanel />
+      )}
     </AdminShell>
   );
 }

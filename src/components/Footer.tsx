@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AssetImage } from "@/components/AssetImage";
 import { Logo } from "@/components/Logo";
 import { ABOUT_PATH, CONTACT_PATH, TERMS_PATH } from "@/lib/buy";
+import { withBasePath } from "@/lib/paths";
 
 const socials = [
   {
@@ -36,6 +37,12 @@ export function Footer() {
           <Link href={CONTACT_PATH} className="transition-colors hover:text-neon">
             Contact Us
           </Link>
+          <a
+            href={`${withBasePath("/")}#restaurants`}
+            className="transition-colors hover:text-neon"
+          >
+            Restaurants
+          </a>
           <Link href={TERMS_PATH} className="transition-colors hover:text-neon">
             Terms & Privacy
           </Link>

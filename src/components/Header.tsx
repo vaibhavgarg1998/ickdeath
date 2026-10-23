@@ -29,6 +29,11 @@ const links: {
     trackId: "nav_how_to_use",
   },
   {
+    href: `${withBasePath("/")}#restaurants`,
+    label: "Restaurants",
+    trackId: "nav_restaurants",
+  },
+  {
     href: TRACK_PATH,
     label: "Track order",
     trackId: "nav_track_order",
