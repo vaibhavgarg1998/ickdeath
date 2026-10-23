@@ -1,5 +1,5 @@
 /** Inclusive prices in INR paise. GST is included in these amounts. */
-export const LIMITED_UNIT_PRICE_PAISE = 69900;
+export const LIMITED_UNIT_PRICE_PAISE = 59900;
 export const SIMPLE_UNIT_PRICE_PAISE = 59900;
 
 /** Single SKU sold on the website (guest checkout). Update price when live. */
@@ -8,7 +8,7 @@ export const PRODUCT = {
   name: "Seat Safe Tabs",
   shortName: "ICK DEATH Seat Safe Tabs",
   description: "1× Lifter · 2× Alcohol Wipes · 1× Gloves",
-  /** Limited edition inclusive price (69900 = ₹699 incl. GST). */
+  /** Limited edition inclusive price (59900 = ₹599 incl. GST). */
   unitPricePaise: LIMITED_UNIT_PRICE_PAISE,
   /** Simple (non-edition) inclusive price (59900 = ₹599 incl. GST). */
   simpleUnitPricePaise: SIMPLE_UNIT_PRICE_PAISE,
