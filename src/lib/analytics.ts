@@ -27,6 +27,8 @@ export const TRACKED_BUTTONS = [
   { id: "nav_contact", label: "Nav — Contact Us" },
   { id: "nav_how_to_use", label: "Nav — How to use" },
   { id: "nav_track_order", label: "Nav — Track order" },
+  { id: "nav_restaurants", label: "Nav — Restaurants" },
+  { id: "restaurant_subscribe", label: "Restaurants — Request monthly plan" },
   { id: "checkout_continue_quantity", label: "Checkout — Continue (Quantity)" },
   { id: "checkout_continue_contact", label: "Checkout — Continue (Contact)" },
   { id: "checkout_continue_address", label: "Checkout — Continue (Address)" },

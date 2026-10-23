@@ -4,7 +4,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
 
-export type AdminTab = "orders" | "analytics";
+export type AdminTab = "orders" | "analytics" | "restaurants";
 
 export function AdminShell({
   children,
@@ -37,6 +37,7 @@ export function AdminShell({
               [
                 { id: "orders", label: "Orders" },
                 { id: "analytics", label: "Analytics" },
+                { id: "restaurants", label: "Restaurants" },
               ] as const
             ).map((item) => {
               const active = tab === item.id;
