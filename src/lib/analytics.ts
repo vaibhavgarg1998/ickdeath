@@ -19,6 +19,9 @@ export const BUTTON_CLICKS_DOC = "buttonClicks";
 export const TRACKED_BUTTONS = [
   { id: "hero_buy_now", label: "Hero — Buy Now" },
   { id: "header_buy_now", label: "Header — Buy Now" },
+  { id: "about_buy_now", label: "About — Buy Now" },
+  { id: "track_buy_now", label: "Track — Buy Now" },
+  { id: "buy_amazon", label: "Buy — Amazon" },
   { id: "edition_barbie", label: "Edition — Barbie" },
   { id: "edition_traveller", label: "Edition — Traveller" },
   { id: "edition_beard", label: "Edition — Beard" },

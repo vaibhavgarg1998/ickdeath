@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { CHECKOUT_PATH, CONTACT_PATH } from "@/lib/buy";
+import { BuyNowButton } from "@/components/BuyNowButton";
+import { CONTACT_PATH } from "@/lib/buy";
 
 export const metadata: Metadata = {
   title: "About Us — ICK DEATH",
@@ -21,7 +22,7 @@ const facts = [
   },
   {
     title: "What's in a pack",
-    body: "1 lifter, 1 alcohol wipe, 1 adhesive, and 1 pair of gloves.",
+    body: "2 lifters, 2 alcohol wipes, 2 adhesives, and 1 pair of gloves.",
   },
   {
     title: "Editions",
@@ -49,7 +50,7 @@ export default function AboutPage() {
         <p className="mt-6 font-[family-name:var(--font-ibm-plex)] text-base leading-relaxed text-text-soft sm:text-lg">
           ICK DEATH makes Seat Safe Tabs. We started the company so people in
           India could lift a toilet seat without putting a bare hand on it.
-          The product is small on purpose: one tab, one wipe, one stick, one
+          The product is small on purpose: two tabs, two wipes, two sticks, one
           pair of gloves.
         </p>
 
@@ -70,12 +71,12 @@ export default function AboutPage() {
         </div>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href={CHECKOUT_PATH}
+          <BuyNowButton
+            trackId="about_buy_now"
             className="inline-flex h-12 items-center justify-center bg-neon px-6 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-bg"
           >
             Buy now
-          </Link>
+          </BuyNowButton>
           <Link
             href={CONTACT_PATH}
             className="inline-flex h-12 items-center justify-center border border-neon/50 px-6 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-neon"
