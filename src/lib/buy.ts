@@ -1,5 +1,5 @@
-/** Product marketplace links — update when listings go live. */
-export const AMAZON_URL = "https://www.amazon.in";
+/** Live Amazon.in product listing. */
+export const AMAZON_URL = "https://www.amazon.in/dp/B0HPB54Q8F";
 export const FLIPKART_URL = "https://www.flipkart.com";
 
 /** Direct website guest checkout (no account). */

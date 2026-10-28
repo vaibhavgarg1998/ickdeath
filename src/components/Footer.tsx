@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AssetImage } from "@/components/AssetImage";
 import { Logo } from "@/components/Logo";
-import { ABOUT_PATH, CONTACT_PATH, TERMS_PATH } from "@/lib/buy";
+import { ABOUT_PATH, AMAZON_URL, CONTACT_PATH, TERMS_PATH } from "@/lib/buy";
 import { withBasePath } from "@/lib/paths";
 
 const socials = [
@@ -15,11 +15,11 @@ const socials = [
   //   src: "/assets/icon-web.png",
   //   label: "Buy on Flipkart",
   // },
-  // {
-  //   href: AMAZON_URL,
-  //   src: "/assets/icon-amazon.svg",
-  //   label: "Buy on Amazon",
-  // },
+  {
+    href: AMAZON_URL,
+    src: "/assets/icon-amazon.svg",
+    label: "Buy on Amazon",
+  },
 ];
 
 export function Footer() {

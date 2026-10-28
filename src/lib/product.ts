@@ -7,7 +7,7 @@ export const PRODUCT = {
   id: "seat-safe-tabs",
   name: "Seat Safe Tabs",
   shortName: "ICK DEATH Seat Safe Tabs",
-  description: "1× Lifter · 2× Alcohol Wipes · 1× Gloves",
+  description: "2× Lifters · 2× Alcohol Wipes · 2× 3M Adhesive · 1× Gloves",
   /** Limited edition inclusive price (59900 = ₹599 incl. GST). */
   unitPricePaise: LIMITED_UNIT_PRICE_PAISE,
   /** Simple (non-edition) inclusive price (59900 = ₹599 incl. GST). */

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { BuyNowButton } from "@/components/BuyNowButton";
 import {
   FULFILLMENT_STEPS,
   formatTrackQueryInput,
@@ -21,7 +21,6 @@ import {
 } from "@/lib/orders";
 import { formatINR } from "@/lib/product";
 import { trackOrders } from "@/lib/track-order";
-import { CHECKOUT_PATH } from "@/lib/buy";
 
 const STATUS_COPY: Record<OrderStatus, string> = {
   confirmed: "Confirmed",
@@ -158,12 +157,12 @@ export function TrackOrderClient() {
         </div>
       ) : null}
 
-      <Link
-        href={CHECKOUT_PATH}
+      <BuyNowButton
+        trackId="track_buy_now"
         className="mt-8 inline-flex h-11 items-center font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim transition-colors hover:text-neon"
       >
         Need to order? Buy now →
-      </Link>
+      </BuyNowButton>
     </div>
   );
 }
