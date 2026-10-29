@@ -91,7 +91,8 @@ export default function TermsPage() {
               <li>
                 The amount you pay is the total shown at checkout. Cash on
                 delivery is collected when the order arrives. Online payment
-                through HDFC SmartGateway is paused.
+                is collected through HDFC SmartGateway (UPI, cards, or
+                netbanking).
               </li>
               <li>
                 If a price is shown by mistake, we may cancel the order before
