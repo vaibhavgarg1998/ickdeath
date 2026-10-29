@@ -1,5 +1,7 @@
 # HDFC SmartGateway setup (ICK DEATH)
 
+Online checkout is **off** until `HDFC_CHECKOUT_ENABLED` in `src/lib/payments.ts` is `true`. Cash on delivery is the live method. The routes below stay in place so HDFC can be turned back on without rebuilding them.
+
 Checkout uses [HDFC SmartGateway Hypercheckout](https://docs.hdfcbank.juspay.in/docs/hypercheckout-mobile-sdk) on the web. The customer leaves the site for HDFC’s payment page, then comes back. The server marks an order paid only after the Order Status API returns `CHARGED` for the same amount.
 
 This needs a **server** (API routes). It will not work on pure GitHub Pages static hosting.

@@ -11,7 +11,7 @@ import {
   type HdfcGatewayStatus,
   type HdfcOutcome,
 } from "@/lib/hdfc-server";
-import { formatOrderItems, PRODUCT } from "@/lib/product";
+import { postOrdersWebhook } from "@/lib/orders-webhook";
 import { notifyOrderWhatsApp } from "@/lib/whatsapp-notify";
 import type { PlacedOrder } from "@/lib/orders";
 
@@ -148,22 +148,3 @@ function paidOrder(
   };
 }
 
-async function postOrdersWebhook(order: PlacedOrder): Promise<void> {
-  const url = process.env.NEXT_PUBLIC_ORDERS_WEBHOOK_URL ?? "";
-  if (!url) return;
-
-  try {
-    await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...order,
-        productId: PRODUCT.id,
-        productName: formatOrderItems(order),
-        source: "ickdeath-website",
-      }),
-    });
-  } catch {
-    // Webhook is best-effort.
-  }
-}

@@ -16,6 +16,7 @@ import {
   fulfillmentStepIndex,
   parseTrackQuery,
   paymentMethodLabel,
+  paymentStatusLabel,
   type OrderStatus,
   type PublicTrackedOrder,
 } from "@/lib/orders";
@@ -210,7 +211,7 @@ function OrderCard({ order }: { order: PublicTrackedOrder }) {
         <Row label="Amount">{formatINR(order.amountPaise)}</Row>
         <Row label="Payment">
           {paymentMethodLabel(order.paymentMethod)} ·{" "}
-          <span className="capitalize">{order.paymentStatus}</span>
+          {paymentStatusLabel(order.paymentMethod, order.paymentStatus)}
         </Row>
         {order.customerName ? (
           <Row label="Name">{order.customerName}</Row>

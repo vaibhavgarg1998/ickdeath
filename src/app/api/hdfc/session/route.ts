@@ -14,6 +14,7 @@ import {
   paiseToRupees,
 } from "@/lib/hdfc-server";
 import { normalizePhone } from "@/lib/orders";
+import { HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
 import {
   cartTotalPaise,
   cartTotalQty,
@@ -30,6 +31,12 @@ type SessionBody = {
 
 export async function POST(request: Request) {
   try {
+    if (!HDFC_CHECKOUT_ENABLED) {
+      return NextResponse.json(
+        { error: "HDFC checkout is temporarily unavailable" },
+        { status: 503 },
+      );
+    }
     if (!isHdfcConfigured()) {
       return NextResponse.json(
         { error: "HDFC SmartGateway is not configured on the server" },

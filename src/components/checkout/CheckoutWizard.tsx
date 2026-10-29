@@ -8,7 +8,8 @@ import {
   subscribeCheckoutDraft,
 } from "@/lib/checkout-storage";
 import { trackButtonClick } from "@/lib/analytics";
-import { startHdfcCheckout } from "@/lib/place-order";
+import { startCodCheckout, startHdfcCheckout } from "@/lib/place-order";
+import { HDFC_CHECKOUT_ENABLED, type CheckoutPaymentChoice } from "@/lib/payments";
 import { isColorwayId } from "@/lib/product";
 import { StepQuantity } from "@/components/checkout/StepQuantity";
 import { StepContact } from "@/components/checkout/StepContact";
@@ -74,6 +75,7 @@ export function CheckoutWizard() {
   const [stepOverride, setStep] = useState<StepId | null>(null);
   const [errorOverride, setError] = useState<string | null | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
+  const [method, setMethod] = useState<CheckoutPaymentChoice>("cod");
   const step = stepOverride ?? paymentNotice?.step ?? "quantity";
   const error = errorOverride !== undefined ? errorOverride : (paymentNotice?.error ?? null);
 
@@ -101,7 +103,16 @@ export function CheckoutWizard() {
     setSubmitting(true);
     setError(null);
     try {
-      await startHdfcCheckout({ draft });
+      if (method === "hdfc") {
+        if (!HDFC_CHECKOUT_ENABLED) {
+          setError("Online payment is paused. Use cash on delivery.");
+          setSubmitting(false);
+          return;
+        }
+        await startHdfcCheckout({ draft });
+        return;
+      }
+      await startCodCheckout({ draft });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Could not place order. Please try again.";
@@ -197,9 +208,13 @@ export function CheckoutWizard() {
         {step === "payment" ? (
           <StepPayment
             draft={draft}
+            method={method}
+            onMethod={setMethod}
             onBack={() => setStep("summary")}
             onPlaceOrder={() => {
-              trackButtonClick("checkout_place_order");
+              trackButtonClick(
+                method === "cod" ? "checkout_place_cod" : "checkout_place_order",
+              );
               void handlePlaceOrder();
             }}
             submitting={submitting}

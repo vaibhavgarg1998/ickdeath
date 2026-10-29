@@ -12,7 +12,8 @@ import type { PlacedOrder } from "@/lib/orders";
 
 type View =
   | { kind: "loading" }
-  | { kind: "missing"; orderId: string | null }
+  | { kind: "missing"; orderId: string | null; fromGateway: boolean }
+  | { kind: "cod"; order: PlacedOrder }
   | { kind: "success"; order: PlacedOrder }
   | { kind: "duplicate"; order: PlacedOrder }
   | { kind: "mismatch"; order: PlacedOrder }
@@ -33,7 +34,10 @@ function resolveView(
   loaded: boolean,
 ): View {
   if (!loaded) return { kind: "loading" };
-  if (!order) return { kind: "missing", orderId };
+  if (!order) return { kind: "missing", orderId, fromGateway: Boolean(hint) };
+  if (order.paymentMethod === "cod" && order.orderStatus !== "cancelled") {
+    return { kind: "cod", order };
+  }
   if (hint === "duplicate") return { kind: "duplicate", order };
   if (isVerifiedPaid(order)) return { kind: "success", order };
   if (order.hdfcResult === "mismatch" || hint === "mismatch") {
@@ -56,7 +60,7 @@ function resolveView(
 }
 
 const COPY: Record<
-  Exclude<View["kind"], "loading" | "missing">,
+  Exclude<View["kind"], "loading" | "missing" | "cod">,
   { eyebrow: string; title: string; body: string }
 > = {
   success: {
@@ -116,7 +120,9 @@ export function PaymentResponse() {
       .then((record) => {
         if (cancelled) return;
         setOrder(record);
-        if (record && isVerifiedPaid(record)) clearCheckoutDraft();
+        if (record && (isVerifiedPaid(record) || record.paymentMethod === "cod")) {
+          clearCheckoutDraft();
+        }
       })
       .catch(() => {
         // Leave the empty state. A missing order is not a receipt.
@@ -138,10 +144,12 @@ export function PaymentResponse() {
         <div className="rounded-2xl border border-neon/40 bg-bg-elevated p-6 sm:p-10">
           {view.kind === "loading" ? (
             <p className="font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
-              Checking this payment with the stored HDFC response…
+              Loading your order…
             </p>
           ) : view.kind === "missing" ? (
-            <Missing orderId={view.orderId} />
+            <Missing orderId={view.orderId} fromGateway={view.fromGateway} />
+          ) : view.kind === "cod" ? (
+            <CodResult order={view.order} />
           ) : (
             <Result view={view} />
           )}
@@ -151,30 +159,67 @@ export function PaymentResponse() {
   );
 }
 
-function Missing({ orderId }: { orderId: string | null }) {
+function CodResult({ order }: { order: PlacedOrder }) {
+  return (
+    <>
+      <p className="font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-[0.2em] text-neon">
+        Order placed
+      </p>
+      <h1 className="mt-3 font-[family-name:var(--font-bebas)] text-4xl tracking-wide text-white sm:text-5xl">
+        Cash on delivery
+      </h1>
+      <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
+        Pay {formatINRExact(order.amountPaise)} in cash when the order arrives.
+        Tracking updates go to WhatsApp.
+      </p>
+      <dl className="mt-8 space-y-3 font-[family-name:var(--font-ibm-plex)] text-sm text-text-soft">
+        <Fact label="Amount">{formatINRExact(order.amountPaise)}</Fact>
+        <Fact label="Order ID">{order.orderId}</Fact>
+        <Fact label="Payment">Cash on delivery</Fact>
+      </dl>
+      <Actions success orderId={order.orderId} wa={customerWhatsAppUrl(order)} />
+    </>
+  );
+}
+
+function Missing({
+  orderId,
+  fromGateway,
+}: {
+  orderId: string | null;
+  fromGateway: boolean;
+}) {
   return (
     <>
       <p className="font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-[0.2em] text-red-400">
-        Payment failed
+        {fromGateway ? "Payment failed" : "Order not found"}
       </p>
       <h1 className="mt-3 font-[family-name:var(--font-bebas)] text-4xl tracking-wide text-white sm:text-5xl">
-        Payment was not completed
+        {fromGateway ? "Payment was not completed" : "We couldn't find this order"}
       </h1>
       <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
-        No stored HDFC response was found for this visit, so no receipt was generated.
+        {fromGateway
+          ? "No stored HDFC response was found for this visit, so no receipt was generated."
+          : "Check the order ID and try again from the track page."}
       </p>
-      <Facts
-        amount="Not available"
-        txnId="Not issued"
-        orderId={orderId || "Not available"}
-        gatewayOrderId="Not available"
-      />
+      {fromGateway ? (
+        <Facts
+          amount="Not available"
+          txnId="Not issued"
+          orderId={orderId || "Not available"}
+          gatewayOrderId="Not available"
+        />
+      ) : null}
       <Actions success={false} orderId={orderId} wa={null} />
     </>
   );
 }
 
-function Result({ view }: { view: Exclude<View, { kind: "loading" } | { kind: "missing" }> }) {
+function Result({
+  view,
+}: {
+  view: Exclude<View, { kind: "loading" } | { kind: "missing" } | { kind: "cod" }>;
+}) {
   const copy = COPY[view.kind];
   const order = view.order;
   const success = view.kind === "success";

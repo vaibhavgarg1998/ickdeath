@@ -208,8 +208,8 @@ export function AdminOrdersPanel() {
                       </td>
                       <td className="px-3 py-3 capitalize">
                         {order.orderStatus}
-                        <div className="text-xs text-text-dim capitalize">
-                          pay: {order.paymentStatus}
+                        <div className="text-xs text-text-dim">
+                          {paymentMethodLabel(order.paymentMethod)} · {order.paymentStatus}
                         </div>
                       </td>
                     </tr>
@@ -329,11 +329,28 @@ function OrderDetail({
 
       <div className="mt-6 space-y-4 border-t border-white/10 pt-5">
         <p className="font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim">
-          Payment status updates automatically from HDFC SmartGateway (
-          <span className="text-white/70">pending → paid / failed</span>
-          ). Order status starts as{" "}
-          <span className="text-white/70">confirmed</span>. You can change either
-          anytime.
+          {order.paymentMethod === "cod" ? (
+            <>
+              Cash on delivery stays{" "}
+              <span className="text-white/70">pending</span> until the cash is
+              collected. Mark it paid after delivery. Order status starts as{" "}
+              <span className="text-white/70">confirmed</span>.
+            </>
+          ) : order.paymentMethod === "hdfc" ? (
+            <>
+              Payment status updates automatically from HDFC SmartGateway (
+              <span className="text-white/70">pending → paid / failed</span>
+              ). Order status starts as{" "}
+              <span className="text-white/70">confirmed</span>. You can change
+              either anytime.
+            </>
+          ) : (
+            <>
+              Order status starts as{" "}
+              <span className="text-white/70">confirmed</span>. You can change
+              payment or fulfillment anytime.
+            </>
+          )}
         </p>
 
         <label className="block">
