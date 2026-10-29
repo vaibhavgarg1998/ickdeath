@@ -48,5 +48,5 @@ After changing `firestore.rules`, paste them into Firestore → Rules → Publis
 
 - Firebase client SDK works with static GitHub Pages **and** Vercel.
 - HDFC payment APIs need a Node server — see `docs/hdfc-setup.md` (use Vercel for production payments).
-- HDFC checkout is paused (`HDFC_CHECKOUT_ENABLED` in `src/lib/payments.ts`). Cash on delivery orders are written by the server (`/api/orders/cod`). Guest client creates still require `paymentMethod == 'hdfc'`.
+- HDFC checkout is enabled (`HDFC_CHECKOUT_ENABLED` in `src/lib/payments.ts`). Cash on delivery orders are written by the server (`/api/orders/cod`). Guest client creates still require `paymentMethod == 'hdfc'`.
 - Anyone with a Firebase Auth account that can sign in can manage orders — only create trusted admin users.

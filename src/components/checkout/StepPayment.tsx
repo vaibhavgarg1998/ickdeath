@@ -63,8 +63,9 @@ export function StepPayment({
         Payment
       </h2>
       <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
-        Cash on delivery is available now. You&apos;ll get tracking updates on
-        WhatsApp after the order is placed.
+        {HDFC_CHECKOUT_ENABLED
+          ? "Pay online with HDFC, or pay the courier in cash. You'll get tracking updates on WhatsApp after the order is placed."
+          : "Cash on delivery is available now. You'll get tracking updates on WhatsApp after the order is placed."}
       </p>
 
       <div className="mt-6 space-y-3" role="radiogroup" aria-label="Payment method">
