@@ -31,7 +31,7 @@ export type CheckoutDraft = {
   address: CheckoutAddress;
 };
 
-export type PaymentMethod = "hdfc" | "razorpay" | "whatsapp";
+export type PaymentMethod = "cod" | "hdfc" | "razorpay" | "whatsapp";
 
 export type PaymentStatus = "pending" | "paid" | "failed";
 
@@ -283,14 +283,32 @@ export function fulfillmentStepIndex(status: OrderStatus): number {
 }
 
 function asPaymentMethod(value: unknown): PaymentMethod {
-  if (value === "hdfc" || value === "razorpay" || value === "whatsapp") return value;
+  if (
+    value === "cod" ||
+    value === "hdfc" ||
+    value === "razorpay" ||
+    value === "whatsapp"
+  ) {
+    return value;
+  }
   return "hdfc";
 }
 
 export function paymentMethodLabel(method: PaymentMethod): string {
+  if (method === "cod") return "Cash on delivery";
   if (method === "hdfc") return "HDFC";
   if (method === "razorpay") return "Razorpay";
   return "WhatsApp";
+}
+
+export function paymentStatusLabel(
+  method: PaymentMethod,
+  status: PaymentStatus,
+): string {
+  if (method === "cod" && status === "pending") return "Pay on delivery";
+  if (status === "paid") return "Paid";
+  if (status === "failed") return "Failed";
+  return "Pending";
 }
 
 function asPaymentStatus(value: unknown): PaymentStatus {

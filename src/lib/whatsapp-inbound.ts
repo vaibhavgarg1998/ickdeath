@@ -2,6 +2,8 @@ import {
   ORDER_ID_PATTERN,
   normalizeOrderId,
   parseTrackQuery,
+  paymentMethodLabel,
+  paymentStatusLabel,
   type PublicTrackedOrder,
 } from "@/lib/orders";
 import {
@@ -29,12 +31,7 @@ type InboundMessage = {
 const HELP_IDS = new Set(["help", "human", "agent"]);
 
 function statusLine(order: PublicTrackedOrder): string {
-  const pay =
-    order.paymentStatus === "paid"
-      ? "Paid"
-      : order.paymentStatus === "failed"
-        ? "Payment failed"
-        : "Payment pending";
+  const pay = `${paymentMethodLabel(order.paymentMethod)} · ${paymentStatusLabel(order.paymentMethod, order.paymentStatus)}`;
   const fulfill =
     order.orderStatus === "cancelled"
       ? "Cancelled"

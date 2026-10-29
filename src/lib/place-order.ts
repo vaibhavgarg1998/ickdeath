@@ -1,11 +1,14 @@
 import { cartTotalPaise, cartTotalQty, formatOrderItems } from "@/lib/product";
 import {
   generateOrderId,
+  paymentMethodLabel,
+  paymentStatusLabel,
   type CheckoutDraft,
   type PlacedOrder,
 } from "@/lib/orders";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { createOrderInFirestore, getOrderFromFirestore } from "@/lib/orders-db";
+import { HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
 import { withBasePath } from "@/lib/paths";
 
 function whatsappBusinessNumber(): string {
@@ -22,7 +25,7 @@ export function buildCustomerWhatsAppMessage(order: PlacedOrder): string {
     `Name: ${order.contact.name}`,
     `Phone: ${order.contact.phone}`,
     `Address: ${order.address.line1}${order.address.line2 ? `, ${order.address.line2}` : ""}, ${order.address.city}, ${order.address.state} ${order.address.pincode}`,
-    `Payment: ${order.paymentMethod.toUpperCase()} (${order.paymentStatus})`,
+    `Payment: ${paymentMethodLabel(order.paymentMethod)} (${paymentStatusLabel(order.paymentMethod, order.paymentStatus)})`,
   ].join("\n");
 }
 
@@ -53,10 +56,40 @@ function apiUrl(path: string): string {
   return withBasePath(withSlash);
 }
 
+/** Save a cash-on-delivery order on the server, then open the confirmation. */
+export async function startCodCheckout(input: {
+  draft: CheckoutDraft;
+}): Promise<void> {
+  const res = await fetch(apiUrl("/api/orders/cod/"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ draft: input.draft }),
+  });
+  const raw = await res.text();
+  let data: { orderId?: string; error?: string } = {};
+  if (raw) {
+    try {
+      data = JSON.parse(raw) as typeof data;
+    } catch {
+      throw new Error("Could not place order");
+    }
+  }
+  if (!res.ok || !data.orderId) {
+    throw new Error(data.error ?? "Could not place order");
+  }
+
+  window.location.assign(
+    withBasePath(`/checkout/success/?order=${encodeURIComponent(data.orderId)}`),
+  );
+}
+
 /** Create a pending order, then send the customer to HDFC SmartGateway. */
 export async function startHdfcCheckout(input: {
   draft: CheckoutDraft;
 }): Promise<void> {
+  if (!HDFC_CHECKOUT_ENABLED) {
+    throw new Error("Online payment is paused. Use cash on delivery.");
+  }
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase is not configured");
   }

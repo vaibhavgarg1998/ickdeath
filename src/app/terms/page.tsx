@@ -89,8 +89,9 @@ export default function TermsPage() {
                 price before you pay.
               </li>
               <li>
-                The amount you pay is the total shown at checkout. That total
-                is the amount sent to HDFC SmartGateway.
+                The amount you pay is the total shown at checkout. Cash on
+                delivery is collected when the order arrives. Online payment
+                through HDFC SmartGateway is paused.
               </li>
               <li>
                 If a price is shown by mistake, we may cancel the order before
@@ -134,8 +135,10 @@ export default function TermsPage() {
                 accept.
               </li>
               <li>
-                Refunds are sent to the original payment method. The time they
-                take depends on HDFC and your bank.
+                Cash on delivery is not charged online. If we cancel before
+                the cash is collected, there is nothing to refund. Refunds for
+                online payments are sent to the original payment method. The
+                time they take depends on HDFC and your bank.
               </li>
             </ul>
           </Section>

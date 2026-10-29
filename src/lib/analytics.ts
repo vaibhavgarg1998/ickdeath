@@ -36,7 +36,8 @@ export const TRACKED_BUTTONS = [
   { id: "checkout_continue_contact", label: "Checkout — Continue (Contact)" },
   { id: "checkout_continue_address", label: "Checkout — Continue (Address)" },
   { id: "checkout_continue_summary", label: "Checkout — Continue (Summary)" },
-  { id: "checkout_place_order", label: "Checkout — Place / Pay" },
+  { id: "checkout_place_order", label: "Checkout — Pay with HDFC" },
+  { id: "checkout_place_cod", label: "Checkout — Cash on delivery" },
 ] as const;
 
 export type TrackedButtonId = (typeof TRACKED_BUTTONS)[number]["id"];
