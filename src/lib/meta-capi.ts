@@ -53,14 +53,10 @@ function graphVersion(): string {
   return /^v\d+\.\d+$/.test(raw) ? raw : DEFAULT_GRAPH_VERSION;
 }
 
-/**
- * Test Events are for local and preview only. A code left on the production
- * Vercel env is ignored so live traffic is not marked as a test.
- */
+/** Sent only when META_TEST_EVENT_CODE is set. Remove it when testing is done. */
 export function metaTestEventCode(): string | undefined {
   const code = process.env.META_TEST_EVENT_CODE?.trim() ?? "";
   if (!code || !/^TEST[A-Z0-9]{1,24}$/i.test(code)) return undefined;
-  if (process.env.VERCEL_ENV === "production") return undefined;
   return code;
 }
 
