@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { CodOrderError, placeCodOrder } from "@/lib/cod-fulfill";
+import { browserContextFromRequest, sendVerifiedPurchase } from "@/lib/meta-capi";
 import type { CheckoutDraft } from "@/lib/orders";
 
 export const runtime = "nodejs";
@@ -16,6 +17,15 @@ export async function POST(request: Request) {
     }
 
     const order = await placeCodOrder(body.draft);
+    try {
+      await sendVerifiedPurchase({
+        order,
+        amountPaise: order.amountPaise,
+        context: browserContextFromRequest(request),
+      });
+    } catch {
+      console.error("meta purchase failed", { orderId: order.orderId });
+    }
     return NextResponse.json({ orderId: order.orderId });
   } catch (err) {
     if (err instanceof CodOrderError) {

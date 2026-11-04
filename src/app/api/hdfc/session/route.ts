@@ -14,6 +14,7 @@ import {
   paiseToRupees,
 } from "@/lib/hdfc-server";
 import { normalizePhone } from "@/lib/orders";
+import { browserContextFromRequest } from "@/lib/meta-capi";
 import { HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
 import {
   cartTotalPaise,
@@ -71,11 +72,12 @@ export async function POST(request: Request) {
     }
 
     const amountPaise = cartTotalPaise(lines);
+    const meta = browserContextFromRequest(request);
     let hdfcOrderId = "";
     let reserved = false;
     for (let attempt = 0; attempt < 5; attempt++) {
       hdfcOrderId = generateHdfcOrderId();
-      const saved = await saveHdfcPaymentAdmin({ hdfcOrderId, orderId, amountPaise });
+      const saved = await saveHdfcPaymentAdmin({ hdfcOrderId, orderId, amountPaise, meta });
       if (saved.ok) {
         reserved = true;
         break;

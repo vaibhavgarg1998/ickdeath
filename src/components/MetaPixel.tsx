@@ -3,21 +3,19 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import {
-  META_PIXEL_ID,
-  isAdminPath,
-  trackMetaPage,
-} from "@/lib/meta-pixel";
+import { configureMetaPixel, isAdminPath, trackMetaPage } from "@/lib/meta-pixel";
 
-export function MetaPixel() {
+export function MetaPixel({ pixelId }: { pixelId: string }) {
   const pathname = usePathname();
   const admin = isAdminPath(pathname);
+  const id = /^\d{8,20}$/.test(pixelId) ? pixelId : "";
+  configureMetaPixel(id);
 
   useEffect(() => {
     trackMetaPage(pathname);
   }, [pathname]);
 
-  if (!META_PIXEL_ID || admin) return null;
+  if (!id || admin) return null;
 
   return (
     <>
@@ -30,8 +28,7 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window,document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init','${META_PIXEL_ID}');
-fbq('track','PageView');`}
+fbq('init','${id}');`}
       </Script>
       <noscript>
         <img
@@ -39,7 +36,7 @@ fbq('track','PageView');`}
           width={1}
           style={{ display: "none" }}
           alt=""
-          src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+          src={`https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1`}
         />
       </noscript>
     </>

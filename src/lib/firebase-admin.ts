@@ -72,11 +72,20 @@ export type ReserveHdfcPaymentResult =
   | { ok: true }
   | { ok: false; reason: "exists" | "paid" | "missing" };
 
+export type HdfcMetaMatch = {
+  clientIpAddress?: string;
+  clientUserAgent?: string;
+  fbp?: string;
+  fbc?: string;
+  eventSourceUrl?: string;
+};
+
 /** Create the gateway order row once. A colliding id is not overwritten. */
 export async function saveHdfcPaymentAdmin(input: {
   hdfcOrderId: string;
   orderId: string;
   amountPaise: number;
+  meta?: HdfcMetaMatch;
 }): Promise<ReserveHdfcPaymentResult> {
   const db = getFirestore(getFirebaseAdminApp());
   let outcome: ReserveHdfcPaymentResult = { ok: false, reason: "missing" };
@@ -106,6 +115,7 @@ export async function saveHdfcPaymentAdmin(input: {
       orderId: input.orderId,
       amountPaise: input.amountPaise,
       createdAt: now,
+      ...(input.meta ? { meta: input.meta } : {}),
     });
     tx.update(orderRef, {
       hdfcOrderId: input.hdfcOrderId,
@@ -282,9 +292,21 @@ export async function recordHdfcAttemptAdmin(input: GatewayWrite): Promise<void>
   });
 }
 
+function readMetaMatch(value: unknown): HdfcMetaMatch | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Record<string, unknown>;
+  const meta: HdfcMetaMatch = {};
+  for (const key of ["clientIpAddress", "clientUserAgent", "fbp", "fbc", "eventSourceUrl"] as const) {
+    const item = raw[key];
+    if (typeof item === "string" && item.trim() && item.length <= 512) meta[key] = item.trim();
+  }
+  return Object.keys(meta).length ? meta : undefined;
+}
+
 export async function getHdfcPaymentAdmin(hdfcOrderId: string): Promise<{
   orderId: string;
   amountPaise: number;
+  meta?: HdfcMetaMatch;
 } | null> {
   const db = getFirestore(getFirebaseAdminApp());
   const snap = await db.collection(HDFC_PAYMENTS).doc(hdfcOrderId).get();
@@ -293,7 +315,8 @@ export async function getHdfcPaymentAdmin(hdfcOrderId: string): Promise<{
   const orderId = String(data?.orderId ?? "");
   const amountPaise = Number(data?.amountPaise ?? 0);
   if (!orderId || !Number.isFinite(amountPaise)) return null;
-  return { orderId, amountPaise };
+  const meta = readMetaMatch(data?.meta);
+  return meta ? { orderId, amountPaise, meta } : { orderId, amountPaise };
 }
 
 /** Auto-set payment status (e.g. failed). Never downgrades a paid order. */

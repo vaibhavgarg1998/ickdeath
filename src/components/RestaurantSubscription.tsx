@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Field } from "@/components/checkout/form-ui";
 import { trackButtonClick } from "@/lib/analytics";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 import {
   createRestaurantSubscription,
   validateRestaurantSubscription,
@@ -38,6 +39,18 @@ export function RestaurantSubscription() {
     try {
       const record = await createRestaurantSubscription(values);
       trackButtonClick("restaurant_subscribe");
+      const [firstName, ...rest] = record.name.trim().split(/\s+/);
+      trackMetaEvent("Lead", {
+        eventId: `lead-${record.id}`,
+        customData: { content_name: "Restaurant monthly plan" },
+        userData: {
+          email: record.email,
+          phone: record.phone,
+          firstName,
+          lastName: rest.join(" "),
+          externalId: record.id,
+        },
+      });
       setSaved(record);
       setValues(EMPTY);
     } catch (err) {
