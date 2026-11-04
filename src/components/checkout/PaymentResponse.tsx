@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { clearCheckoutDraft } from "@/lib/checkout-storage";
+import { trackMetaPurchase } from "@/lib/meta-pixel";
 import { customerWhatsAppUrl } from "@/lib/place-order";
 import { formatINRExact } from "@/lib/product";
 import { TRACK_PATH } from "@/lib/buy";
@@ -137,6 +138,12 @@ export function PaymentResponse() {
   }, []);
 
   const view = resolveView(order, hint, orderId, loaded);
+
+  useEffect(() => {
+    if (!order) return;
+    if (view.kind !== "success" && view.kind !== "cod") return;
+    trackMetaPurchase(order);
+  }, [order, view.kind]);
 
   return (
     <div className="min-h-screen bg-bg pb-[env(safe-area-inset-bottom)]">
