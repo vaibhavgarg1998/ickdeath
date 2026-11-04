@@ -8,6 +8,7 @@ import {
   subscribeCheckoutDraft,
 } from "@/lib/checkout-storage";
 import { trackButtonClick } from "@/lib/analytics";
+import { trackMetaInitiateCheckout } from "@/lib/meta-pixel";
 import { startCodCheckout, startHdfcCheckout } from "@/lib/place-order";
 import { HDFC_CHECKOUT_ENABLED, type CheckoutPaymentChoice } from "@/lib/payments";
 import { isColorwayId } from "@/lib/product";
@@ -81,16 +82,15 @@ export function CheckoutWizard() {
 
   useEffect(() => {
     const edition = new URLSearchParams(window.location.search).get("edition");
-    if (!isColorwayId(edition)) return;
-
     const current = getCheckoutDraftSnapshot();
-    if (current.colorway === edition) return;
-
-    // Deep link only focuses the edition — quantity stays user-controlled.
-    saveCheckoutDraft({
-      ...current,
-      colorway: edition,
-    });
+    if (isColorwayId(edition) && current.colorway !== edition) {
+      // Deep link only focuses the edition — quantity stays user-controlled.
+      saveCheckoutDraft({
+        ...current,
+        colorway: edition,
+      });
+    }
+    trackMetaInitiateCheckout(getCheckoutDraftSnapshot().lines);
   }, []);
 
   function updateDraft(next: Parameters<typeof saveCheckoutDraft>[0]) {
