@@ -1,5 +1,5 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore, type Transaction } from "firebase-admin/firestore";
 import type {
   OrderStatus,
   PaymentStatus,
@@ -90,7 +90,7 @@ export async function saveHdfcPaymentAdmin(input: {
   const db = getFirestore(getFirebaseAdminApp());
   let outcome: ReserveHdfcPaymentResult = { ok: false, reason: "missing" };
 
-  await db.runTransaction(async (tx) => {
+  await db.runTransaction(async (tx: Transaction) => {
     const paymentRef = db.collection(HDFC_PAYMENTS).doc(input.hdfcOrderId);
     const orderRef = db.collection("orders").doc(input.orderId);
     const paymentSnap = await tx.get(paymentRef);
@@ -172,7 +172,7 @@ export async function finalizeHdfcPaidAdmin(input: {
   const txnRef = input.txnId ? db.collection(HDFC_TXN_IDS).doc(input.txnId) : null;
   let outcome: "created" | "already" | "duplicate" = "duplicate";
 
-  await db.runTransaction(async (tx) => {
+  await db.runTransaction(async (tx: Transaction) => {
     const orderSnap = await tx.get(orderRef);
     const txnSnap = txnRef ? await tx.get(txnRef) : null;
     const orderData = orderSnap.data();
