@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ContactEmailLink } from "@/components/ContactEmailLink";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { ABOUT_PATH, TRACK_PATH } from "@/lib/buy";
@@ -56,8 +57,8 @@ export default function ContactPage() {
             </p>
           </a>
 
-          <a
-            href={`mailto:${EMAIL}`}
+          <ContactEmailLink
+            email={EMAIL}
             className="rounded-2xl border border-neon/40 bg-bg-elevated p-5 transition-colors hover:border-neon sm:col-span-2"
           >
             <p className="font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-[0.16em] text-text-dim">
@@ -69,7 +70,7 @@ export default function ContactPage() {
             <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-text-soft">
               Best for order questions and cancellations before shipping.
             </p>
-          </a>
+          </ContactEmailLink>
         </div>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">

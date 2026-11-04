@@ -11,6 +11,7 @@ import {
   type HdfcGatewayStatus,
   type HdfcOutcome,
 } from "@/lib/hdfc-server";
+import { sendVerifiedPurchase } from "@/lib/meta-capi";
 import { postOrdersWebhook } from "@/lib/orders-webhook";
 import { notifyOrderWhatsApp } from "@/lib/whatsapp-notify";
 import type { PlacedOrder } from "@/lib/orders";
@@ -112,6 +113,17 @@ export async function fulfillHdfcPayment(hdfcOrderId: string): Promise<HdfcFulfi
         console.error("whatsapp confirmed failed", err);
       }
       await postOrdersWebhook(paid);
+      if (gateway.amountPaise != null) {
+        try {
+          await sendVerifiedPurchase({
+            order: paid,
+            amountPaise: gateway.amountPaise,
+            context: payment.meta,
+          });
+        } catch {
+          console.error("meta purchase failed", { orderId: order.orderId });
+        }
+      }
     }
 
     return { outcome: "paid", orderId: order.orderId };
