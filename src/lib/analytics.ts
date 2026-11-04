@@ -19,18 +19,25 @@ export const BUTTON_CLICKS_DOC = "buttonClicks";
 export const TRACKED_BUTTONS = [
   { id: "hero_buy_now", label: "Hero — Buy Now" },
   { id: "header_buy_now", label: "Header — Buy Now" },
+  { id: "about_buy_now", label: "About — Buy Now" },
+  { id: "track_buy_now", label: "Track — Buy Now" },
+  { id: "buy_amazon", label: "Buy — Amazon" },
   { id: "edition_barbie", label: "Edition — Barbie" },
   { id: "edition_traveller", label: "Edition — Traveller" },
   { id: "edition_beard", label: "Edition — Beard" },
   { id: "edition_peace", label: "Edition — Peace" },
-  { id: "nav_product", label: "Nav — Product" },
+  { id: "nav_product", label: "Nav — About Us" },
+  { id: "nav_contact", label: "Nav — Contact Us" },
   { id: "nav_how_to_use", label: "Nav — How to use" },
   { id: "nav_track_order", label: "Nav — Track order" },
+  { id: "nav_restaurants", label: "Nav — Restaurants" },
+  { id: "restaurant_subscribe", label: "Restaurants — Request monthly plan" },
   { id: "checkout_continue_quantity", label: "Checkout — Continue (Quantity)" },
   { id: "checkout_continue_contact", label: "Checkout — Continue (Contact)" },
   { id: "checkout_continue_address", label: "Checkout — Continue (Address)" },
   { id: "checkout_continue_summary", label: "Checkout — Continue (Summary)" },
-  { id: "checkout_place_order", label: "Checkout — Place / Pay" },
+  { id: "checkout_place_order", label: "Checkout — Pay with HDFC" },
+  { id: "checkout_place_cod", label: "Checkout — Cash on delivery" },
 ] as const;
 
 export type TrackedButtonId = (typeof TRACKED_BUTTONS)[number]["id"];

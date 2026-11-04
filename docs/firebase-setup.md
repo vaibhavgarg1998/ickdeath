@@ -41,11 +41,12 @@ After changing `firestore.rules`, paste them into Firestore → Rules → Publis
 - `allow get` on `orders/{orderId}` (track by order ID)
 - `allow list` when `contact.phone` is at least 10 characters (track by mobile number)
 - `analytics/{docId}` create/update for guests (button click counters); read for signed-in admins
-- Republish after this change or mobile lookup / analytics will keep failing
+- `restaurantSubscriptions/{id}` create for guests (monthly restaurant signup); read and status update for signed-in admins
+- Republish after this change or mobile lookup / analytics / restaurant signups will keep failing
 
 ## 4. Notes
 
 - Firebase client SDK works with static GitHub Pages **and** Vercel.
 - HDFC payment APIs need a Node server — see `docs/hdfc-setup.md` (use Vercel for production payments).
-- Republish `firestore.rules` after pulling: new checkouts must use `paymentMethod == 'hdfc'`.
+- HDFC checkout is enabled (`HDFC_CHECKOUT_ENABLED` in `src/lib/payments.ts`). Cash on delivery orders are written by the server (`/api/orders/cod`). Guest client creates still require `paymentMethod == 'hdfc'`.
 - Anyone with a Firebase Auth account that can sign in can manage orders — only create trusted admin users.

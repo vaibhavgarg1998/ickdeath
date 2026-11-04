@@ -51,19 +51,13 @@ async function readReturn(request: Request): Promise<{
 
 function redirectFor(
   request: Request,
-  outcome: "paid" | "pending" | "failed" | "cancelled" | "mismatch",
+  outcome: "paid" | "pending" | "failed" | "cancelled" | "mismatch" | "duplicate",
   orderId: string | null,
 ): NextResponse {
-  if (outcome === "paid" && orderId) {
-    const url = new URL(appUrl(request, "/checkout/success/"));
-    url.searchParams.set("order", orderId);
-    return NextResponse.redirect(url, 303);
-  }
-
-  const payment =
-    outcome === "pending" ? "pending" : outcome === "mismatch" ? "review" : outcome === "cancelled" ? "cancelled" : "failed";
-  const url = new URL(appUrl(request, "/checkout/"));
-  url.searchParams.set("payment", payment);
+  // Every outcome lands on the same response page. The page reads the stored
+  // bank response and will not show a receipt just because the path says success.
+  const url = new URL(appUrl(request, "/checkout/response/"));
+  url.searchParams.set("result", outcome);
   if (orderId) url.searchParams.set("order", orderId);
   return NextResponse.redirect(url, 303);
 }

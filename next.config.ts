@@ -50,6 +50,10 @@ const serverManifests = [
   "./.next/server/prefetch-hints.json",
 ];
 
+// The HDFC SDK reads package.json from the function working directory
+// (/var/task on Vercel) as soon as it is loaded. Tracing drops that file.
+const serverFiles = ["./package.json", ...serverManifests];
+
 const nextConfig: NextConfig = {
   // Static export only for GitHub Pages (no API routes).
   // Local / Vercel builds keep Route Handlers for HDFC SmartGateway.
@@ -62,14 +66,16 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   // Keep POST webhooks (WhatsApp) from being 308'd to a trailing slash.
   skipTrailingSlashRedirect: true,
+  // Do not write AGENTS.md / CLAUDE.md into the repo on `next dev`.
+  agentRules: false,
   // Keep the HDFC SDK and winston as real node_modules files. The route
   // loads them on demand so a bad package.json cannot crash function startup.
   serverExternalPackages: ["expresscheckout-nodejs", "winston"],
   outputFileTracingIncludes: {
-    "/**": serverManifests,
-    "/api/hdfc/session": [...hdfcTrace, ...serverManifests],
-    "/api/hdfc/return": [...hdfcTrace, ...serverManifests],
-    "/api/hdfc/webhook": [...hdfcTrace, ...serverManifests],
+    "/**": serverFiles,
+    "/api/hdfc/session": [...hdfcTrace, ...serverFiles],
+    "/api/hdfc/return": [...hdfcTrace, ...serverFiles],
+    "/api/hdfc/webhook": [...hdfcTrace, ...serverFiles],
   },
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,

@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { HowToUse } from "@/components/HowToUse";
+import { RestaurantSubscription } from "@/components/RestaurantSubscription";
 import { WhatsInTheBox } from "@/components/WhatsInTheBox";
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
         <ChooseEdition />
         <HowToUse />
         <WhatsInTheBox />
+        <RestaurantSubscription />
       </main>
       <Footer />
     </div>

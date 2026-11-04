@@ -1,5 +1,7 @@
 # HDFC SmartGateway setup (ICK DEATH)
 
+Online checkout is **on** (`HDFC_CHECKOUT_ENABLED` in `src/lib/payments.ts`). Cash on delivery stays available. Set the flag to `false` to pause HDFC without removing the routes.
+
 Checkout uses [HDFC SmartGateway Hypercheckout](https://docs.hdfcbank.juspay.in/docs/hypercheckout-mobile-sdk) on the web. The customer leaves the site for HDFC’s payment page, then comes back. The server marks an order paid only after the Order Status API returns `CHARGED` for the same amount.
 
 This needs a **server** (API routes). It will not work on pure GitHub Pages static hosting.
@@ -61,9 +63,9 @@ Republish `firestore.rules` so new guest orders can be created with `paymentMeth
 2. The app saves a pending Firestore order (`ICK-YYYYMMDD-NNNN`)
 3. `/api/hdfc/session` creates a SmartGateway session for the server-side total
 4. The browser opens HDFC’s payment page (UPI, cards, netbanking)
-5. HDFC POSTs to `/api/hdfc/return`
-6. The server checks order id and amount. `CHARGED` marks the order **paid** and sends the WhatsApp confirmation
-7. The customer lands on `/checkout/success/`
+5. HDFC POSTs to `/api/hdfc/return` on the registered site URL (`NEXT_PUBLIC_SITE_URL`)
+6. The server calls the Order Status API and stores status, order id, amount, and transaction id. `CHARGED` marks the order **paid** only when those values match the pending order. A repeat transaction id does not create a second receipt.
+7. The customer lands on `/checkout/response/`, which shows success or failure, the amount, and the transaction id. `/checkout/success/` uses the same page and will not show a receipt unless the stored response is paid.
 
 Customer-facing order IDs keep their hyphens. SmartGateway gets a separate alphanumeric id (stored as `hdfcOrderId`).
 
@@ -73,4 +75,4 @@ On the dummy gateway, amount rules from HDFC’s test page apply: under ₹500 t
 
 ## 6. Go live
 
-Set `HDFC_ENV=production` and replace the sandbox merchant id, client id, and keys. Complete HDFC activation before taking live payments.
+Set `HDFC_ENV=production` and `HDFC_BASE_URL=https://smartgateway.hdfc.bank.in`, then replace the sandbox merchant id, client id, and keys. `live` is treated as production. A production setting rejects the UAT host. `NEXT_PUBLIC_SITE_URL` must be `https://ickdeath.com` so HDFC returns to the registered URL.

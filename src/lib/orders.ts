@@ -31,7 +31,7 @@ export type CheckoutDraft = {
   address: CheckoutAddress;
 };
 
-export type PaymentMethod = "hdfc" | "razorpay" | "whatsapp";
+export type PaymentMethod = "cod" | "hdfc" | "razorpay" | "whatsapp";
 
 export type PaymentStatus = "pending" | "paid" | "failed";
 
@@ -85,19 +85,31 @@ export type PlacedOrder = CheckoutDraft & {
   orderStatus: OrderStatus;
   /** SmartGateway order id (alphanumeric, separate from the customer-facing ICK id). */
   hdfcOrderId?: string;
+  /** Transaction id from the Order Status API. Receipts use this, not the browser redirect. */
   hdfcTxnId?: string;
+  /** Last Order Status API status stored for this order. */
+  hdfcStatus?: string;
+  /** Amount (paise) returned by the Order Status API. */
+  hdfcAmountPaise?: number;
+  /** Outcome of the last status check. A receipt is shown only when this is paid. */
+  hdfcResult?: "paid" | "pending" | "failed" | "cancelled" | "mismatch" | "duplicate";
   /** Kept for orders placed before the HDFC switch. */
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   whatsapp?: OrderWhatsApp;
 };
 
+function randomOrderSuffix(): string {
+  const buf = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(buf);
+  return String(1000 + (buf[0]! % 9000));
+}
+
 export function generateOrderId(now = new Date()): string {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  return `ICK-${y}${m}${d}-${rand}`;
+  return `ICK-${y}${m}${d}-${randomOrderSuffix()}`;
 }
 
 export function isNormalizedMobile(phone: string): boolean {
@@ -271,14 +283,32 @@ export function fulfillmentStepIndex(status: OrderStatus): number {
 }
 
 function asPaymentMethod(value: unknown): PaymentMethod {
-  if (value === "hdfc" || value === "razorpay" || value === "whatsapp") return value;
+  if (
+    value === "cod" ||
+    value === "hdfc" ||
+    value === "razorpay" ||
+    value === "whatsapp"
+  ) {
+    return value;
+  }
   return "hdfc";
 }
 
 export function paymentMethodLabel(method: PaymentMethod): string {
+  if (method === "cod") return "Cash on delivery";
   if (method === "hdfc") return "HDFC";
   if (method === "razorpay") return "Razorpay";
   return "WhatsApp";
+}
+
+export function paymentStatusLabel(
+  method: PaymentMethod,
+  status: PaymentStatus,
+): string {
+  if (method === "cod" && status === "pending") return "Pay on delivery";
+  if (status === "paid") return "Paid";
+  if (status === "failed") return "Failed";
+  return "Pending";
 }
 
 function asPaymentStatus(value: unknown): PaymentStatus {

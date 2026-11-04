@@ -1,5 +1,4 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import type {
   OrderStatus,
@@ -58,73 +57,256 @@ export function getFirebaseAdminApp(): App {
   });
 }
 
-export async function markOrderPaidAdmin(input: {
-  order: PlacedOrder;
-  hdfcOrderId: string;
-  hdfcTxnId?: string;
-}): Promise<void> {
-  const db = getFirestore(getFirebaseAdminApp());
-  const ref = db.collection("orders").doc(input.order.orderId);
-  const now = new Date().toISOString();
-
-  const gateway = {
-    paymentMethod: "hdfc" as const,
-    hdfcOrderId: input.hdfcOrderId,
-    ...(input.hdfcTxnId ? { hdfcTxnId: input.hdfcTxnId } : {}),
-  };
-
-  const snap = await ref.get();
-  const base = {
-    ...input.order,
-    ...gateway,
-    productId: PRODUCT.id,
-    productName: formatOrderItems(input.order),
-    source: "ickdeath-website",
-    paymentStatus: "paid" as const,
-    orderStatus: input.order.orderStatus ?? "confirmed",
-    updatedAt: now,
-  };
-
-  if (snap.exists) {
-    await ref.update({
-      paymentStatus: "paid",
-      ...gateway,
-      updatedAt: now,
-    });
-  } else {
-    await ref.set({
-      ...base,
-      createdAt: input.order.createdAt,
-    });
-  }
-}
-
 const HDFC_PAYMENTS = "hdfcPayments";
+const HDFC_TXN_IDS = "hdfcTxnIds";
 
+export type HdfcAttemptResult =
+  | "paid"
+  | "pending"
+  | "failed"
+  | "cancelled"
+  | "mismatch"
+  | "duplicate";
+
+export type ReserveHdfcPaymentResult =
+  | { ok: true }
+  | { ok: false; reason: "exists" | "paid" | "missing" };
+
+export type HdfcMetaMatch = {
+  clientIpAddress?: string;
+  clientUserAgent?: string;
+  fbp?: string;
+  fbc?: string;
+  eventSourceUrl?: string;
+};
+
+/** Create the gateway order row once. A colliding id is not overwritten. */
 export async function saveHdfcPaymentAdmin(input: {
   hdfcOrderId: string;
   orderId: string;
   amountPaise: number;
-}): Promise<void> {
+  meta?: HdfcMetaMatch;
+}): Promise<ReserveHdfcPaymentResult> {
   const db = getFirestore(getFirebaseAdminApp());
-  await db.collection(HDFC_PAYMENTS).doc(input.hdfcOrderId).set({
-    hdfcOrderId: input.hdfcOrderId,
-    orderId: input.orderId,
-    amountPaise: input.amountPaise,
-    createdAt: new Date().toISOString(),
+  let outcome: ReserveHdfcPaymentResult = { ok: false, reason: "missing" };
+
+  await db.runTransaction(async (tx) => {
+    const paymentRef = db.collection(HDFC_PAYMENTS).doc(input.hdfcOrderId);
+    const orderRef = db.collection("orders").doc(input.orderId);
+    const paymentSnap = await tx.get(paymentRef);
+    const orderSnap = await tx.get(orderRef);
+
+    if (paymentSnap.exists) {
+      outcome = { ok: false, reason: "exists" };
+      return;
+    }
+    if (!orderSnap.exists) {
+      outcome = { ok: false, reason: "missing" };
+      return;
+    }
+    if (orderSnap.data()?.paymentStatus === "paid") {
+      outcome = { ok: false, reason: "paid" };
+      return;
+    }
+
+    const now = new Date().toISOString();
+    tx.set(paymentRef, {
+      hdfcOrderId: input.hdfcOrderId,
+      orderId: input.orderId,
+      amountPaise: input.amountPaise,
+      createdAt: now,
+      ...(input.meta ? { meta: input.meta } : {}),
+    });
+    tx.update(orderRef, {
+      hdfcOrderId: input.hdfcOrderId,
+      paymentMethod: "hdfc",
+      paymentStatus: "pending",
+      amountPaise: input.amountPaise,
+      hdfcResult: "pending",
+      updatedAt: now,
+    });
+    outcome = { ok: true };
   });
-  await db.collection("orders").doc(input.orderId).update({
-    hdfcOrderId: input.hdfcOrderId,
-    paymentMethod: "hdfc",
-    paymentStatus: "pending",
-    amountPaise: input.amountPaise,
-    updatedAt: new Date().toISOString(),
+
+  return outcome;
+}
+
+type GatewayWrite = {
+  orderId: string;
+  hdfcOrderId: string;
+  txnId: string;
+  gatewayStatus: string;
+  gatewayAmountPaise: number | null;
+  result: HdfcAttemptResult;
+  orderIdMatched: boolean;
+  amountMatched: boolean;
+};
+
+function gatewayDoc(input: GatewayWrite, now: string) {
+  return {
+    status: input.gatewayStatus,
+    txnId: input.txnId,
+    gatewayAmountPaise: input.gatewayAmountPaise,
+    result: input.result,
+    orderIdMatched: input.orderIdMatched,
+    amountMatched: input.amountMatched,
+    storedAt: now,
+  };
+}
+
+/**
+ * Mark a charge paid only when this transaction id and gateway order id are new
+ * or already stored for the same order. A second id does not create a receipt.
+ */
+export async function finalizeHdfcPaidAdmin(input: {
+  order: PlacedOrder;
+  hdfcOrderId: string;
+  txnId: string;
+  gatewayStatus: string;
+  gatewayAmountPaise: number;
+}): Promise<"created" | "already" | "duplicate"> {
+  const db = getFirestore(getFirebaseAdminApp());
+  const now = new Date().toISOString();
+  const orderRef = db.collection("orders").doc(input.order.orderId);
+  const paymentRef = db.collection(HDFC_PAYMENTS).doc(input.hdfcOrderId);
+  const txnRef = input.txnId ? db.collection(HDFC_TXN_IDS).doc(input.txnId) : null;
+  let outcome: "created" | "already" | "duplicate" = "duplicate";
+
+  await db.runTransaction(async (tx) => {
+    const orderSnap = await tx.get(orderRef);
+    const txnSnap = txnRef ? await tx.get(txnRef) : null;
+    const orderData = orderSnap.data();
+    const paid = orderData?.paymentStatus === "paid";
+    const sameGateway = orderData?.hdfcOrderId === input.hdfcOrderId;
+    const sameTxn =
+      !input.txnId || !orderData?.hdfcTxnId || orderData.hdfcTxnId === input.txnId;
+
+    const response = gatewayDoc(
+      {
+        orderId: input.order.orderId,
+        hdfcOrderId: input.hdfcOrderId,
+        txnId: input.txnId,
+        gatewayStatus: input.gatewayStatus,
+        gatewayAmountPaise: input.gatewayAmountPaise,
+        result: "paid",
+        orderIdMatched: true,
+        amountMatched: true,
+      },
+      now,
+    );
+
+    if (txnSnap?.exists) {
+      const ownerOrder = String(txnSnap.data()?.orderId ?? "");
+      const ownerGateway = String(txnSnap.data()?.hdfcOrderId ?? "");
+      const foreign =
+        (ownerOrder && ownerOrder !== input.order.orderId) ||
+        (ownerGateway && ownerGateway !== input.hdfcOrderId);
+      if (foreign) {
+        tx.set(paymentRef, { ...response, result: "duplicate" }, { merge: true });
+        outcome = "duplicate";
+        return;
+      }
+    }
+
+    if (paid && (!sameGateway || !sameTxn)) {
+      tx.set(paymentRef, { ...response, result: "duplicate" }, { merge: true });
+      outcome = "duplicate";
+      return;
+    }
+
+    if (paid && sameGateway && sameTxn) {
+      tx.set(paymentRef, response, { merge: true });
+      outcome = "already";
+      return;
+    }
+
+    const gateway = {
+      paymentMethod: "hdfc" as const,
+      paymentStatus: "paid" as const,
+      hdfcOrderId: input.hdfcOrderId,
+      hdfcStatus: input.gatewayStatus,
+      hdfcAmountPaise: input.gatewayAmountPaise,
+      hdfcResult: "paid" as const,
+      ...(input.txnId ? { hdfcTxnId: input.txnId } : {}),
+      updatedAt: now,
+    };
+
+    if (orderSnap.exists) {
+      tx.update(orderRef, gateway);
+    } else {
+      tx.set(orderRef, {
+        ...input.order,
+        ...gateway,
+        productId: PRODUCT.id,
+        productName: formatOrderItems(input.order),
+        source: "ickdeath-website",
+        orderStatus: input.order.orderStatus ?? "confirmed",
+        createdAt: input.order.createdAt,
+      });
+    }
+
+    tx.set(paymentRef, response, { merge: true });
+    if (txnRef && input.txnId) {
+      const txnRecord = {
+        txnId: input.txnId,
+        orderId: input.order.orderId,
+        hdfcOrderId: input.hdfcOrderId,
+        amountPaise: input.gatewayAmountPaise,
+        createdAt: now,
+      };
+      if (txnSnap?.exists) tx.set(txnRef, txnRecord, { merge: true });
+      else tx.create(txnRef, txnRecord);
+    }
+    outcome = "created";
   });
+
+  return outcome;
+}
+
+/** Store a non-paid status response. Never downgrades an order that is already paid. */
+export async function recordHdfcAttemptAdmin(input: GatewayWrite): Promise<void> {
+  const db = getFirestore(getFirebaseAdminApp());
+  const now = new Date().toISOString();
+  const paymentRef = db.collection(HDFC_PAYMENTS).doc(input.hdfcOrderId);
+  const orderRef = db.collection("orders").doc(input.orderId);
+
+  await paymentRef.set(gatewayDoc(input, now), { merge: true });
+
+  const snap = await orderRef.get();
+  if (!snap.exists) return;
+  const data = snap.data();
+  if (data?.paymentStatus === "paid") return;
+  const currentGateway = String(data?.hdfcOrderId ?? "");
+  if (currentGateway && currentGateway !== input.hdfcOrderId) return;
+
+  await orderRef.update({
+    paymentStatus: input.result === "pending" ? "pending" : "failed",
+    hdfcOrderId: input.hdfcOrderId,
+    hdfcStatus: input.gatewayStatus,
+    hdfcResult: input.result,
+    ...(input.txnId ? { hdfcTxnId: input.txnId } : {}),
+    ...(input.gatewayAmountPaise != null
+      ? { hdfcAmountPaise: input.gatewayAmountPaise }
+      : {}),
+    updatedAt: now,
+  });
+}
+
+function readMetaMatch(value: unknown): HdfcMetaMatch | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Record<string, unknown>;
+  const meta: HdfcMetaMatch = {};
+  for (const key of ["clientIpAddress", "clientUserAgent", "fbp", "fbc", "eventSourceUrl"] as const) {
+    const item = raw[key];
+    if (typeof item === "string" && item.trim() && item.length <= 512) meta[key] = item.trim();
+  }
+  return Object.keys(meta).length ? meta : undefined;
 }
 
 export async function getHdfcPaymentAdmin(hdfcOrderId: string): Promise<{
   orderId: string;
   amountPaise: number;
+  meta?: HdfcMetaMatch;
 } | null> {
   const db = getFirestore(getFirebaseAdminApp());
   const snap = await db.collection(HDFC_PAYMENTS).doc(hdfcOrderId).get();
@@ -133,7 +315,8 @@ export async function getHdfcPaymentAdmin(hdfcOrderId: string): Promise<{
   const orderId = String(data?.orderId ?? "");
   const amountPaise = Number(data?.amountPaise ?? 0);
   if (!orderId || !Number.isFinite(amountPaise)) return null;
-  return { orderId, amountPaise };
+  const meta = readMetaMatch(data?.meta);
+  return meta ? { orderId, amountPaise, meta } : { orderId, amountPaise };
 }
 
 /** Auto-set payment status (e.g. failed). Never downgrades a paid order. */
@@ -189,8 +372,47 @@ export async function findOrdersForTracking(
   );
 }
 
+const FIREBASE_CERTS_URL =
+  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
+
+let firebaseCerts: { keys: Record<string, string>; expiresAt: number } | null = null;
+
+async function firebasePublicCerts(): Promise<Record<string, string>> {
+  if (firebaseCerts && firebaseCerts.expiresAt > Date.now()) return firebaseCerts.keys;
+  const response = await fetch(FIREBASE_CERTS_URL);
+  if (!response.ok) throw new Error("Could not load Firebase public keys");
+  const keys = (await response.json()) as Record<string, string>;
+  const maxAge = Number(/max-age=(\d+)/.exec(response.headers.get("cache-control") ?? "")?.[1] ?? 3600);
+  firebaseCerts = { keys, expiresAt: Date.now() + maxAge * 1000 };
+  return keys;
+}
+
+/**
+ * Verify a Firebase ID token without firebase-admin/auth.
+ * That entry loads jwks-rsa, which require()s the ESM-only jose package and
+ * crashes the Vercel function before checkout can respond.
+ */
 export async function verifyAdminIdToken(idToken: string) {
-  return getAuth(getFirebaseAdminApp()).verifyIdToken(idToken);
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID?.trim();
+  if (!projectId) {
+    throw new Error("Firebase Admin is not configured");
+  }
+
+  const { decodeProtectedHeader, importX509, jwtVerify } = await import("jose");
+  const kid = decodeProtectedHeader(idToken).kid;
+  if (!kid) throw new Error("Invalid admin token");
+  const cert = (await firebasePublicCerts())[kid];
+  if (!cert) throw new Error("Invalid admin token");
+
+  const { payload } = await jwtVerify(idToken, await importX509(cert, "RS256"), {
+    issuer: `https://securetoken.google.com/${projectId}`,
+    audience: projectId,
+    clockTolerance: 5,
+  });
+  if (typeof payload.sub !== "string" || !payload.sub) {
+    throw new Error("Invalid admin token");
+  }
+  return payload;
 }
 
 export async function getOrderAdmin(orderId: string): Promise<PlacedOrder | null> {

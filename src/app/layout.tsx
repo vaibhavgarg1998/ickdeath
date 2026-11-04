@@ -6,6 +6,8 @@ import {
   Inter,
   Space_Mono,
 } from "next/font/google";
+import { MetaPixel } from "@/components/MetaPixel";
+import { metaPixelId } from "@/lib/meta-capi";
 import "./globals.css";
 
 const bebas = Bebas_Neue({
@@ -61,7 +63,10 @@ export default function RootLayout({
       lang="en"
       className={`${bebas.variable} ${anton.variable} ${ibmPlex.variable} ${spaceMono.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-bg text-white">{children}</body>
+      <body className="min-h-full bg-bg text-white">
+        <MetaPixel pixelId={metaPixelId()} />
+        {children}
+      </body>
     </html>
   );
 }

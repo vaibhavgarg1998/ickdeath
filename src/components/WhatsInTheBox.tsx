@@ -1,9 +1,9 @@
 import { AssetImage } from "@/components/AssetImage";
 
 const contents = [
-  "1X Ick Death Lifter",
-  "1X Alcohol Wipe",
-  "1X 3M adhesive",
+  "2X Ick Death Lifter",
+  "2X Alcohol Wipe",
+  "2X 3M Adhesive",
   "1X Gloves",
 ];
 

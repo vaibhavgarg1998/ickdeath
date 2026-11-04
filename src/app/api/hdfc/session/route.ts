@@ -14,6 +14,8 @@ import {
   paiseToRupees,
 } from "@/lib/hdfc-server";
 import { normalizePhone } from "@/lib/orders";
+import { browserContextFromRequest } from "@/lib/meta-capi";
+import { HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
 import {
   cartTotalPaise,
   cartTotalQty,
@@ -30,6 +32,12 @@ type SessionBody = {
 
 export async function POST(request: Request) {
   try {
+    if (!HDFC_CHECKOUT_ENABLED) {
+      return NextResponse.json(
+        { error: "HDFC checkout is temporarily unavailable" },
+        { status: 503 },
+      );
+    }
     if (!isHdfcConfigured()) {
       return NextResponse.json(
         { error: "HDFC SmartGateway is not configured on the server" },
@@ -64,8 +72,26 @@ export async function POST(request: Request) {
     }
 
     const amountPaise = cartTotalPaise(lines);
-    const hdfcOrderId = generateHdfcOrderId();
-    await saveHdfcPaymentAdmin({ hdfcOrderId, orderId, amountPaise });
+    const meta = browserContextFromRequest(request);
+    let hdfcOrderId = "";
+    let reserved = false;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      hdfcOrderId = generateHdfcOrderId();
+      const saved = await saveHdfcPaymentAdmin({ hdfcOrderId, orderId, amountPaise, meta });
+      if (saved.ok) {
+        reserved = true;
+        break;
+      }
+      if (saved.reason === "paid") {
+        return NextResponse.json({ error: "This order is already paid" }, { status: 409 });
+      }
+      if (saved.reason === "missing") {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+    }
+    if (!reserved) {
+      return NextResponse.json({ error: "Could not start HDFC payment" }, { status: 500 });
+    }
 
     const phone = normalizePhone(order.contact.phone);
     const [firstName, ...rest] = order.contact.name.trim().split(/\s+/);
