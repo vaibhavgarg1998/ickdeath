@@ -1,4 +1,4 @@
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, type Transaction } from "firebase-admin/firestore";
 import {
   getFirebaseAdminApp,
   isFirebaseAdminConfigured,
@@ -102,7 +102,7 @@ export async function placeCodOrder(draft: CheckoutDraft): Promise<PlacedOrder> 
     const orderId = attempt === 0 ? base.orderId : generateOrderId();
     const candidate = { ...base, orderId };
     const ref = db.collection("orders").doc(orderId);
-    const created = await db.runTransaction(async (tx) => {
+    const created = await db.runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (snap.exists) return false;
       tx.set(ref, {
