@@ -24,7 +24,6 @@ The basic-auth kit’s `config.json` maps like this:
 | `PAYMENT_PAGE_CLIENT_ID` | `HDFC_PAYMENT_PAGE_CLIENT_ID` |
 | `API_KEY` | `HDFC_API_KEY` |
 | `BASE_URL` | `HDFC_BASE_URL` |
-| `RESPONSE_KEY` | `HDFC_RESPONSE_KEY` |
 | `ENABLE_LOGGING` | `HDFC_ENABLE_LOGGING` |
 
 Leave the JWE fields empty unless you have real PEM files. Placeholder keys are ignored so the API key is used.
@@ -35,7 +34,6 @@ HDFC_MERCHANT_ID=
 HDFC_PAYMENT_PAGE_CLIENT_ID=
 HDFC_API_KEY=
 HDFC_BASE_URL=https://smartgateway.hdfcuat.bank.in
-HDFC_RESPONSE_KEY=
 HDFC_ENABLE_LOGGING=false
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
