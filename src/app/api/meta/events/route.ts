@@ -20,6 +20,7 @@ type EventBody = {
   eventId?: unknown;
   customData?: unknown;
   userData?: unknown;
+  eventTime?: unknown;
   eventSourceUrl?: unknown;
   fbp?: unknown;
   fbc?: unknown;
@@ -86,11 +87,15 @@ export async function POST(request: Request) {
   const result = await sendMetaEvent({
     eventName,
     eventId,
+    eventTime: body.eventTime,
     customData: sanitizeMetaCustomData(body.customData),
     user: sanitizeMetaUserInput(body.userData),
     context,
   });
 
+  if (!result.ok && result.reason === "no_user_data") {
+    return NextResponse.json(devBody(result));
+  }
   if (!result.ok && result.reason === "not_configured") {
     return NextResponse.json(devBody(result), { status: 503 });
   }

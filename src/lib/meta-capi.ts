@@ -91,6 +91,20 @@ function hashName(raw: string | undefined): string | undefined {
   return sha256(name);
 }
 
+function hashZip(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const zip = raw.trim().toLowerCase().replace(/[\s-]/g, "");
+  if (!/^[a-z0-9]{3,10}$/.test(zip)) return undefined;
+  return sha256(zip);
+}
+
+function hashCountry(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const country = raw.trim().toLowerCase();
+  if (!/^[a-z]{2}$/.test(country)) return undefined;
+  return sha256(country);
+}
+
 function hashExternalId(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
   const id = raw.trim().toLowerCase();
@@ -104,13 +118,38 @@ function hashedUserData(user: MetaUserInput | undefined): Record<string, string[
   const phone = hashPhone(user?.phone);
   const firstName = hashName(user?.firstName);
   const lastName = hashName(user?.lastName);
+  const city = hashName(user?.city);
+  const state = hashName(user?.state);
+  const zip = hashZip(user?.zip);
+  const country = hashCountry(user?.country);
   const externalId = hashExternalId(user?.externalId);
   if (email) data.em = [email];
   if (phone) data.ph = [phone];
   if (firstName) data.fn = [firstName];
   if (lastName) data.ln = [lastName];
+  if (city) data.ct = [city];
+  if (state) data.st = [state];
+  if (zip) data.zp = [zip];
+  if (country) data.country = [country];
   if (externalId) data.external_id = [externalId];
   return data;
+}
+
+/** Keys Events Manager counts. IP, user agent, fbp, and fbc do not qualify. */
+const CUSTOMER_MATCH_KEYS = ["em", "ph", "fn", "ln", "ge", "db", "ct", "st", "zp"] as const;
+
+function hasCustomerMatch(data: Record<string, string | string[]>): boolean {
+  return CUSTOMER_MATCH_KEYS.some((key) => {
+    const value = data[key];
+    return Array.isArray(value) ? value.length > 0 : Boolean(value);
+  });
+}
+
+function resolveEventTime(claimed: unknown): number {
+  const now = Math.floor(Date.now() / 1000);
+  if (typeof claimed !== "number" || !Number.isInteger(claimed)) return now;
+  if (claimed > now + 60 || claimed < now - 7 * 24 * 60 * 60) return now;
+  return claimed;
 }
 
 function isIp(value: string): boolean {
@@ -223,6 +262,7 @@ function userDataPayload(
 export async function sendMetaEvent(input: {
   eventName: string;
   eventId: string;
+  eventTime?: unknown;
   customData?: MetaCustomData;
   user?: MetaUserInput;
   context?: MetaBrowserContext;
@@ -237,11 +277,11 @@ export async function sendMetaEvent(input: {
   if (!pixelId || !token) return { ok: false, reason: "not_configured" };
 
   const userData = userDataPayload(input.user, input.context);
-  if (Object.keys(userData).length === 0) return { ok: false, reason: "no_user_data" };
+  if (!hasCustomerMatch(userData)) return { ok: false, reason: "no_user_data" };
 
   const event: ServerEvent = {
     event_name: input.eventName,
-    event_time: Math.floor(Date.now() / 1000),
+    event_time: resolveEventTime(input.eventTime),
     event_id: input.eventId,
     action_source: "website",
     user_data: userData,
@@ -332,6 +372,10 @@ export async function sendVerifiedPurchase(input: {
       phone: input.order.contact.phone,
       firstName,
       lastName: rest.join(" "),
+      city: input.order.address.city,
+      state: input.order.address.state,
+      zip: input.order.address.pincode,
+      country: "in",
       externalId: input.order.orderId,
     }),
     context: input.context,
