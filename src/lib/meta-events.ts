@@ -36,6 +36,10 @@ export type MetaUserInput = {
   phone?: string;
   firstName?: string;
   lastName?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
   externalId?: string;
 };
 
@@ -135,6 +139,14 @@ export function sanitizeMetaUserInput(input: unknown): MetaUserInput | undefined
   if (firstName) user.firstName = firstName;
   const lastName = cleanText(raw.lastName, 80);
   if (lastName) user.lastName = lastName;
+  const city = cleanText(raw.city, 80);
+  if (city) user.city = city;
+  const state = cleanText(raw.state, 80);
+  if (state) user.state = state;
+  const zip = cleanText(raw.zip, 10);
+  if (zip) user.zip = zip;
+  const country = cleanText(raw.country, 2);
+  if (country && /^[A-Za-z]{2}$/.test(country)) user.country = country.toLowerCase();
   const externalId = cleanText(raw.externalId, 64);
   if (externalId) user.externalId = externalId;
   return Object.keys(user).length ? user : undefined;

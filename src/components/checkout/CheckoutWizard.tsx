@@ -90,8 +90,11 @@ export function CheckoutWizard() {
         colorway: edition,
       });
     }
-    trackMetaInitiateCheckout(getCheckoutDraftSnapshot().lines);
   }, []);
+
+  useEffect(() => {
+    trackMetaInitiateCheckout(draft.lines);
+  }, [draft]);
 
   function updateDraft(next: Parameters<typeof saveCheckoutDraft>[0]) {
     saveCheckoutDraft(next);

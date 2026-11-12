@@ -1,5 +1,6 @@
 "use client";
 
+import { getCheckoutDraftSnapshot } from "@/lib/checkout-storage";
 import { withBasePath } from "@/lib/paths";
 import { PRODUCT, cartTotalPaise, cartTotalQty, productNameForColorway, type CartLine } from "@/lib/product";
 import {
@@ -39,6 +40,68 @@ export type TrackMetaInput = {
 
 let pixelId = "";
 const sent = new Set<string>();
+
+type QueuedServerEvent = {
+  event: string;
+  eventId: string;
+  eventTime: number;
+  eventSourceUrl: string;
+  customData?: MetaCustomData;
+  userData?: MetaUserInput;
+  sent: boolean;
+};
+
+const serverQueue: QueuedServerEvent[] = [];
+let initiateCheckoutId = "";
+
+function indianMobile(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+  else if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+  return /^[6-9]\d{9}$/.test(digits) ? digits : undefined;
+}
+
+function validEmail(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const email = raw.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320) return undefined;
+  return email;
+}
+
+function hasCustomerInput(user: MetaUserInput | undefined): boolean {
+  if (!user) return false;
+  if (validEmail(user.email) || indianMobile(user.phone)) return true;
+  if (user.zip && /^[1-9]\d{5}$/.test(user.zip.trim())) return true;
+  if (user.firstName?.trim() && user.lastName?.trim()) return true;
+  if (user.city?.trim() && user.state?.trim()) return true;
+  return false;
+}
+
+/** Phone or email, plus city, state, and pincode. Name is included when it was entered. */
+function sessionMetaUser(): MetaUserInput | undefined {
+  if (typeof window === "undefined") return undefined;
+  const draft = getCheckoutDraftSnapshot();
+  const phone = indianMobile(draft.contact.phone);
+  const email = validEmail(draft.contact.email);
+  const city = draft.address.city.trim();
+  const state = draft.address.state.trim();
+  const zip = draft.address.pincode.trim();
+  if (!(phone || email) || !/^[1-9]\d{5}$/.test(zip) || !city || !state) return undefined;
+
+  const [firstName, ...rest] = draft.contact.name.trim().split(/\s+/);
+  const lastName = rest.join(" ").trim();
+  return {
+    ...(email ? { email } : {}),
+    ...(phone ? { phone } : {}),
+    ...(firstName ? { firstName } : {}),
+    ...(lastName ? { lastName } : {}),
+    city,
+    state,
+    zip,
+    country: "in",
+  };
+}
 
 export function configureMetaPixel(id: string): void {
   if (/^\d{8,20}$/.test(id)) pixelId = id;
@@ -85,15 +148,16 @@ function sendPixel(event: string, customData: MetaCustomData | undefined, eventI
   });
 }
 
-function sendServer(event: string, eventId: string, input: TrackMetaInput, customData?: MetaCustomData): void {
+function sendServer(item: QueuedServerEvent, userData: MetaUserInput): void {
   const fbp = browserId("_fbp", /^fb\.1\.\d{10,13}\.\d{1,20}$/);
   const fbc = browserId("_fbc", /^fb\.1\.\d{10,13}\.[A-Za-z0-9_-]{1,200}$/);
   const body = {
-    eventName: event,
-    eventId,
-    customData,
-    userData: input.userData,
-    eventSourceUrl: window.location.href,
+    eventName: item.event,
+    eventId: item.eventId,
+    eventTime: item.eventTime,
+    customData: item.customData,
+    userData,
+    eventSourceUrl: item.eventSourceUrl,
     ...(fbp ? { fbp } : {}),
     ...(fbc ? { fbc } : {}),
   };
@@ -108,9 +172,22 @@ function sendServer(event: string, eventId: string, input: TrackMetaInput, custo
   });
 }
 
+function flushServerQueue(): void {
+  if (typeof window === "undefined") return;
+  const sessionUser = sessionMetaUser();
+  for (const item of serverQueue) {
+    if (item.sent) continue;
+    const user = hasCustomerInput(item.userData) ? item.userData : sessionUser;
+    if (!user || !hasCustomerInput(user)) continue;
+    item.sent = true;
+    sendServer(item, user);
+  }
+}
+
 /**
- * Fire the browser pixel and the server Conversions API with one event id.
- * Purchase is pixel-only here. The server sends that event from the confirmed order.
+ * Fire the browser pixel immediately. The server copy waits until user_data has
+ * a customer match key, then uses this same event id. Purchase is pixel-only
+ * here. The server sends that event from the confirmed order.
  */
 export function trackMetaEvent(event: string, input: TrackMetaInput = {}): void {
   if (typeof window === "undefined" || !pixelId) return;
@@ -127,7 +204,17 @@ export function trackMetaEvent(event: string, input: TrackMetaInput = {}): void 
   const customData = sanitizeMetaCustomData(input.customData);
   sendPixel(event, customData, eventId);
   if (event === "Purchase") return;
-  sendServer(event, eventId, input, customData);
+
+  serverQueue.push({
+    event,
+    eventId,
+    eventTime: Math.floor(Date.now() / 1000),
+    eventSourceUrl: window.location.href.split("#")[0]?.slice(0, 500) ?? window.location.href,
+    customData,
+    userData: input.userData,
+    sent: false,
+  });
+  flushServerQueue();
 }
 
 export function isAdminPath(pathname: string): boolean {
@@ -158,27 +245,37 @@ export function trackMetaPage(pathname: string): void {
       },
     });
   }
+  flushServerQueue();
 }
 
-let checkoutTrackedAt = 0;
+function checkoutCustomData(lines: readonly CartLine[]): MetaCustomData {
+  const selected = lines.filter((line) => line.quantity > 0);
+  return {
+    content_name: PRODUCT.shortName,
+    content_ids: selected.map((line) => line.colorway),
+    content_type: "product",
+    value: cartTotalPaise(lines) / 100,
+    currency: PRODUCT.currency,
+    num_items: cartTotalQty(lines),
+  };
+}
 
 export function trackMetaInitiateCheckout(lines: readonly CartLine[]): void {
-  if (!pixelId) return;
-  const now = Date.now();
-  if (now - checkoutTrackedAt < 1000) return;
-  checkoutTrackedAt = now;
+  if (!pixelId || typeof window === "undefined") return;
+  if (isAdminPath(window.location.pathname)) return;
 
-  const selected = lines.filter((line) => line.quantity > 0);
-  trackMetaEvent("InitiateCheckout", {
-    customData: {
-      content_name: PRODUCT.shortName,
-      content_ids: selected.map((line) => line.colorway),
-      content_type: "product",
-      value: cartTotalPaise(lines) / 100,
-      currency: PRODUCT.currency,
-      num_items: cartTotalQty(lines),
-    },
-  });
+  const customData = checkoutCustomData(lines);
+  if (!initiateCheckoutId) {
+    initiateCheckoutId = crypto.randomUUID();
+    trackMetaEvent("InitiateCheckout", { eventId: initiateCheckoutId, customData });
+    return;
+  }
+
+  const queued = serverQueue.find(
+    (item) => item.event === "InitiateCheckout" && item.eventId === initiateCheckoutId && !item.sent,
+  );
+  if (queued) queued.customData = sanitizeMetaCustomData(customData);
+  flushServerQueue();
 }
 
 /** Browser pixel only. The matching server event is sent when the order is confirmed. */
