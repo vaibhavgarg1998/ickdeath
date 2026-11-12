@@ -24,33 +24,6 @@ const heroBoxes = [
   },
 ];
 
-const features = [
-  {
-    label: "NO TOUCH",
-    icon: "/assets/icon-no-touch.svg",
-    width: 42,
-    height: 42,
-  },
-  {
-    label: "HYGIENIC",
-    icon: "/assets/icon-hygienic.svg",
-    width: 46,
-    height: 50,
-  },
-  {
-    label: "PREMIUM",
-    icon: "/assets/icon-premium.svg",
-    width: 68,
-    height: 64,
-  },
-  {
-    label: "REPLACE",
-    icon: "/assets/icon-replace.svg",
-    width: 56,
-    height: 63,
-  },
-];
-
 export function Hero() {
   return (
     <section
@@ -58,8 +31,8 @@ export function Hero() {
       className="mx-auto w-full max-w-[1728px] px-4 pb-10 sm:px-6 sm:pb-14 md:px-10 md:pb-16 lg:px-16 lg:pb-20"
     >
       <h1 className="animate-rise mt-5 font-[family-name:var(--font-bebas)] text-[clamp(2.5rem,9vw,7.5rem)] leading-[0.95] sm:mt-7 md:mt-10">
-        <span className="block text-white">END THE</span>
-        <span className="block text-neon">BARE HAND ERA</span>
+        <span className="block text-white">RESIGN from touching</span>
+        <span className="block text-neon">toilet seat directly</span>
       </h1>
 
       <div className="animate-rise-delay-1 relative mt-5 overflow-hidden bg-bg-stage sm:mt-8 md:mt-12">
@@ -90,6 +63,10 @@ export function Hero() {
             />
           </div>
 
+          <p className="pointer-events-none absolute left-[7%] top-[8%] z-10 max-w-[42%] font-[family-name:var(--font-bebas)] text-[clamp(1.75rem,4.2vw,4.75rem)] leading-none tracking-wide text-white">
+            Different Editions
+          </p>
+
           {heroBoxes.map((box) => (
             <div key={box.src} className={box.className}>
               <AssetImage
@@ -104,33 +81,6 @@ export function Hero() {
           ))}
         </div>
       </div>
-
-      <div className="mt-5 border border-neon bg-bg-elevated px-3 py-4 sm:mt-8 sm:px-5 sm:py-5 md:mt-10 md:px-8 md:py-7">
-        <ul className="mx-auto grid max-w-5xl grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-6 sm:gap-y-5 md:flex md:flex-wrap md:items-center md:justify-between lg:gap-x-12">
-          {features.map((feature) => (
-            <li
-              key={feature.label}
-              className="flex items-center gap-2 font-[family-name:var(--font-bebas)] text-base tracking-wide text-neon sm:gap-2.5 sm:text-xl md:text-2xl lg:text-[32px]"
-            >
-              <span className="relative inline-flex size-7 shrink-0 items-center justify-center overflow-hidden sm:size-10 md:size-14">
-                <AssetImage
-                  src={feature.icon}
-                  alt=""
-                  width={feature.width}
-                  height={feature.height}
-                  className="max-h-full max-w-full object-contain"
-                />
-              </span>
-              {feature.label}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <p className="animate-rise-delay-2 mt-6 max-w-5xl font-[family-name:var(--font-ibm-plex)] text-base leading-relaxed text-white sm:mt-8 sm:text-lg sm:leading-snug md:mt-12 md:text-2xl lg:text-3xl">
-        Tiny hygiene tabs that help you lift the toilet seat without touching it
-        directly. Pick your personality.
-      </p>
 
       <BuyNowButton
         trackId="hero_buy_now"
