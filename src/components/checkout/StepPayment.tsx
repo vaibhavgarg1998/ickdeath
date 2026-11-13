@@ -2,7 +2,7 @@
 
 import type { CheckoutDraft } from "@/lib/orders";
 import type { CheckoutPaymentChoice } from "@/lib/payments";
-import { HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
+import { COD_CHECKOUT_ENABLED, HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
 import { PriceBreakdownPanel } from "@/components/checkout/form-ui";
 import { cartTotalPaise, formatINR } from "@/lib/product";
 
@@ -26,7 +26,7 @@ const METHODS: {
     id: "cod",
     label: "Cash on delivery",
     detail: "Pay the courier in cash when the pack arrives.",
-    enabled: true,
+    enabled: COD_CHECKOUT_ENABLED,
   },
   {
     id: "hdfc",
@@ -48,14 +48,23 @@ export function StepPayment({
   error,
 }: Props) {
   const total = cartTotalPaise(draft.lines);
-  const selected = METHODS.find((item) => item.id === method) ?? METHODS[0]!;
-  const cta = submitting
-    ? selected.id === "hdfc"
-      ? "Opening HDFC…"
-      : "Placing order…"
-    : selected.id === "hdfc"
-      ? `Pay ${formatINR(total)}`
-      : `Place order · ${formatINR(total)}`;
+  const visible = METHODS.filter((item) => item.id !== "cod" || COD_CHECKOUT_ENABLED);
+  const selected = visible.find((item) => item.id === method) ?? visible[0];
+  const cta = !selected
+    ? "Payment unavailable"
+    : submitting
+      ? selected.id === "hdfc"
+        ? "Opening HDFC…"
+        : "Placing order…"
+      : selected.id === "hdfc"
+        ? `Pay ${formatINR(total)}`
+        : `Place order · ${formatINR(total)}`;
+  const intro =
+    HDFC_CHECKOUT_ENABLED && COD_CHECKOUT_ENABLED
+      ? "Pay online with HDFC, or pay the courier in cash. You'll get tracking updates on WhatsApp after the order is placed."
+      : HDFC_CHECKOUT_ENABLED
+        ? "Pay online with HDFC. You'll get tracking updates on WhatsApp after the order is placed."
+        : "Cash on delivery is available now. You'll get tracking updates on WhatsApp after the order is placed.";
 
   return (
     <div>
@@ -63,13 +72,11 @@ export function StepPayment({
         Payment
       </h2>
       <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
-        {HDFC_CHECKOUT_ENABLED
-          ? "Pay online with HDFC, or pay the courier in cash. You'll get tracking updates on WhatsApp after the order is placed."
-          : "Cash on delivery is available now. You'll get tracking updates on WhatsApp after the order is placed."}
+        {intro}
       </p>
 
       <div className="mt-6 space-y-3" role="radiogroup" aria-label="Payment method">
-        {METHODS.map((item) => {
+        {visible.map((item) => {
           const active = item.id === method;
           return (
             <button
@@ -122,7 +129,7 @@ export function StepPayment({
         </button>
         <button
           type="button"
-          disabled={submitting || !selected.enabled}
+          disabled={submitting || !selected?.enabled}
           onClick={onPlaceOrder}
           className="inline-flex h-12 items-center bg-neon px-6 font-[family-name:var(--font-anton)] text-sm uppercase tracking-[0.14em] text-bg transition-opacity hover:opacity-90 disabled:opacity-60"
         >

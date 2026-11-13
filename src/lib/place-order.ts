@@ -8,7 +8,7 @@ import {
 } from "@/lib/orders";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { createOrderInFirestore, getOrderFromFirestore } from "@/lib/orders-db";
-import { HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
+import { COD_CHECKOUT_ENABLED, HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
 import { withBasePath } from "@/lib/paths";
 
 function whatsappBusinessNumber(): string {
@@ -88,7 +88,11 @@ export async function startHdfcCheckout(input: {
   draft: CheckoutDraft;
 }): Promise<void> {
   if (!HDFC_CHECKOUT_ENABLED) {
-    throw new Error("Online payment is paused. Use cash on delivery.");
+    throw new Error(
+      COD_CHECKOUT_ENABLED
+        ? "Online payment is paused. Use cash on delivery."
+        : "Online payment is paused.",
+    );
   }
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase is not configured");

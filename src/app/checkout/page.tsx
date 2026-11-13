@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckoutWizard } from "@/components/checkout/CheckoutWizard";
-import { HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
+import { COD_CHECKOUT_ENABLED, HDFC_CHECKOUT_ENABLED } from "@/lib/payments";
 
 export const metadata: Metadata = {
   title: "Checkout — ICK DEATH",
@@ -25,7 +25,11 @@ export default function CheckoutPage() {
               CHECKOUT
             </p>
             <p className="mt-0.5 font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.16em] text-text-dim">
-              {HDFC_CHECKOUT_ENABLED ? "Payment partner HDFC" : "Cash on delivery"}
+              {HDFC_CHECKOUT_ENABLED
+                ? "Payment partner HDFC"
+                : COD_CHECKOUT_ENABLED
+                  ? "Cash on delivery"
+                  : "Checkout"}
             </p>
           </div>
         </div>
