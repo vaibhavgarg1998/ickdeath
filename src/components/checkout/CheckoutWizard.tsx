@@ -10,7 +10,11 @@ import {
 import { trackButtonClick } from "@/lib/analytics";
 import { trackMetaInitiateCheckout } from "@/lib/meta-pixel";
 import { startCodCheckout, startHdfcCheckout } from "@/lib/place-order";
-import { HDFC_CHECKOUT_ENABLED, type CheckoutPaymentChoice } from "@/lib/payments";
+import {
+  COD_CHECKOUT_ENABLED,
+  HDFC_CHECKOUT_ENABLED,
+  type CheckoutPaymentChoice,
+} from "@/lib/payments";
 import { isColorwayId } from "@/lib/product";
 import { StepQuantity } from "@/components/checkout/StepQuantity";
 import { StepContact } from "@/components/checkout/StepContact";
@@ -76,7 +80,9 @@ export function CheckoutWizard() {
   const [stepOverride, setStep] = useState<StepId | null>(null);
   const [errorOverride, setError] = useState<string | null | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
-  const [method, setMethod] = useState<CheckoutPaymentChoice>("cod");
+  const [method, setMethod] = useState<CheckoutPaymentChoice>(
+    COD_CHECKOUT_ENABLED ? "cod" : "hdfc",
+  );
   const step = stepOverride ?? paymentNotice?.step ?? "quantity";
   const error = errorOverride !== undefined ? errorOverride : (paymentNotice?.error ?? null);
 
@@ -106,16 +112,20 @@ export function CheckoutWizard() {
     setSubmitting(true);
     setError(null);
     try {
-      if (method === "hdfc") {
-        if (!HDFC_CHECKOUT_ENABLED) {
-          setError("Online payment is paused. Use cash on delivery.");
-          setSubmitting(false);
-          return;
-        }
-        await startHdfcCheckout({ draft });
+      if (method === "cod" && COD_CHECKOUT_ENABLED) {
+        await startCodCheckout({ draft });
         return;
       }
-      await startCodCheckout({ draft });
+      if (!HDFC_CHECKOUT_ENABLED) {
+        setError(
+          COD_CHECKOUT_ENABLED
+            ? "Online payment is paused. Use cash on delivery."
+            : "Online payment is paused.",
+        );
+        setSubmitting(false);
+        return;
+      }
+      await startHdfcCheckout({ draft });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Could not place order. Please try again.";
