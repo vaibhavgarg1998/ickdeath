@@ -128,11 +128,11 @@ export function StepQuantity({ draft, onChange, onNext }: Props) {
             {PRODUCT.description}
           </p>
           <p className="mt-2 font-[family-name:var(--font-ibm-plex)] text-sm text-white">
-            {formatINR(focused.unitPricePaise)} each
-            <span className="text-text-dim">
+            {formatINR(focused.unitPricePaise)}
+            {/* <span className="text-text-dim">
               {" "}
               + {formatINR(PRODUCT.deliveryPaisePerUnit)} delivery
-            </span>
+            </span> */}
           </p>
 
           <p className="mt-4 font-[family-name:var(--font-ibm-plex)] text-[10px] uppercase tracking-[0.18em] text-text-dim">

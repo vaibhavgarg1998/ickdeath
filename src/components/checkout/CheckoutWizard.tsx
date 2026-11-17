@@ -157,7 +157,7 @@ export function CheckoutWizard() {
               </span>
               {i < STEPS.length - 1 ? (
                 <span className="text-white/20" aria-hidden>
-                  /
+                  {"->"}
                 </span>
               ) : null}
             </li>
