@@ -10,6 +10,6 @@ export const HDFC_CHECKOUT_ENABLED = true;
  * The order API stays so existing COD orders can still be tracked.
  * Set this to true to show the option again.
  */
-export const COD_CHECKOUT_ENABLED = false;
+export const COD_CHECKOUT_ENABLED = true;
 
 export type CheckoutPaymentChoice = "cod" | "hdfc";
