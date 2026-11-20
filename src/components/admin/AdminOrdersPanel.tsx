@@ -102,9 +102,11 @@ export function AdminOrdersPanel() {
     }
   }
 
+  const showListChrome = !selected;
+
   return (
     <div>
-      <div className="mb-6">
+      <div className={`mb-6 ${showListChrome ? "block" : "hidden lg:block"}`}>
         <h1 className="font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-neon sm:text-4xl">
           Orders
         </h1>
@@ -119,7 +121,11 @@ export function AdminOrdersPanel() {
         </p>
       ) : null}
 
-      <div className="mb-5 flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-bg-elevated p-4">
+      <div
+        className={`mb-5 flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-bg-elevated p-4 ${
+          showListChrome ? "flex" : "hidden lg:flex"
+        }`}
+      >
         <label className="min-w-[140px] flex-1">
           <span className="mb-1.5 block font-[family-name:var(--font-ibm-plex)] text-xs uppercase tracking-wider text-text-dim">
             From
@@ -162,7 +168,11 @@ export function AdminOrdersPanel() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="overflow-hidden rounded-xl border border-white/10">
+        <div
+          className={`overflow-hidden rounded-xl border border-white/10 ${
+            selected ? "hidden lg:block" : "block"
+          }`}
+        >
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-left font-[family-name:var(--font-ibm-plex)] text-sm">
               <thead className="bg-white/5 text-xs uppercase tracking-wider text-text-dim">
@@ -194,7 +204,14 @@ export function AdminOrdersPanel() {
                       className={`cursor-pointer border-t border-white/10 ${
                         active ? "bg-neon/10" : "hover:bg-white/5"
                       }`}
-                      onClick={() => setSelectedId(order.orderId)}
+                      onClick={() => {
+                        setSelectedId(order.orderId);
+                        setWhatsappNote(null);
+                        setError(null);
+                        if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }
+                      }}
                     >
                       <td className="px-3 py-3 text-neon">{order.orderId}</td>
                       <td className="px-3 py-3">
@@ -220,23 +237,40 @@ export function AdminOrdersPanel() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-bg-elevated p-5">
+        <div
+          className={`rounded-xl border border-white/10 bg-bg-elevated p-5 ${
+            selected ? "block" : "hidden lg:block"
+          }`}
+        >
           {selected ? (
-            <OrderDetail
-              order={selected}
-              saving={saving}
-              whatsappNote={whatsappNote}
-              onOrderStatus={(orderStatus) => void patchStatus({ orderStatus })}
-              onPaymentStatus={(paymentStatus) =>
-                void patchStatus({ paymentStatus })
-              }
-              onResendWhatsApp={() =>
-                void patchStatus({
-                  orderStatus: selected.orderStatus,
-                  resendWhatsApp: true,
-                })
-              }
-            />
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedId(null);
+                  setWhatsappNote(null);
+                  setError(null);
+                }}
+                className="mb-4 flex items-center gap-1 font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim hover:text-neon lg:hidden"
+              >
+                ← Back to orders
+              </button>
+              <OrderDetail
+                order={selected}
+                saving={saving}
+                whatsappNote={whatsappNote}
+                onOrderStatus={(orderStatus) => void patchStatus({ orderStatus })}
+                onPaymentStatus={(paymentStatus) =>
+                  void patchStatus({ paymentStatus })
+                }
+                onResendWhatsApp={() =>
+                  void patchStatus({
+                    orderStatus: selected.orderStatus,
+                    resendWhatsApp: true,
+                  })
+                }
+              />
+            </>
           ) : (
             <p className="font-[family-name:var(--font-ibm-plex)] text-sm text-text-dim">
               Select an order to view details and update status.
