@@ -17,6 +17,8 @@ import {
 } from "@/lib/orders";
 import { formatINR, formatOrderItems } from "@/lib/product";
 
+const PAGE_SIZE = 15;
+
 export function AdminOrdersPanel() {
   const { user, configured } = useAdminAuth();
   const [orders, setOrders] = useState<OrderRecord[]>([]);
@@ -26,6 +28,7 @@ export function AdminOrdersPanel() {
   const [whatsappNote, setWhatsappNote] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!user || !configured) {
@@ -45,12 +48,30 @@ export function AdminOrdersPanel() {
     return unsub;
   }, [user, configured]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [dateFrom, dateTo]);
+
   const filteredOrders = orders.filter((order) =>
     orderMatchesDateRange(order.createdAt, dateFrom, dateTo),
   );
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+
+  useEffect(() => {
+    if (page !== currentPage) {
+      setPage(currentPage);
+    }
+  }, [page, currentPage]);
+
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageOrders = filteredOrders.slice(pageStart, pageStart + PAGE_SIZE);
   const selected =
     filteredOrders.find((o) => o.orderId === selectedId) ?? null;
   const hasDateFilter = Boolean(dateFrom || dateTo);
+  const rangeFrom =
+    filteredOrders.length === 0 ? 0 : pageStart + 1;
+  const rangeTo = Math.min(pageStart + PAGE_SIZE, filteredOrders.length);
 
   async function patchStatus(input: {
     orderStatus?: OrderStatus;
@@ -162,79 +183,110 @@ export function AdminOrdersPanel() {
           Clear
         </button>
         <p className="w-full font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim sm:ml-auto sm:w-auto">
-          Showing {filteredOrders.length}
-          {hasDateFilter ? ` of ${orders.length}` : ""} orders
+          {filteredOrders.length === 0
+            ? "Showing 0 orders"
+            : `Showing ${rangeFrom}–${rangeTo} of ${filteredOrders.length}${
+                hasDateFilter ? ` (filtered from ${orders.length})` : ""
+              }`}
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div
-          className={`overflow-hidden rounded-xl border border-white/10 ${
+          className={`${
             selected ? "hidden lg:block" : "block"
           }`}
         >
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-left font-[family-name:var(--font-ibm-plex)] text-sm">
-              <thead className="bg-white/5 text-xs uppercase tracking-wider text-text-dim">
-                <tr>
-                  <th className="px-3 py-3">Order</th>
-                  <th className="px-3 py-3">Customer</th>
-                  <th className="px-3 py-3">Amount</th>
-                  <th className="px-3 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.length === 0 ? (
+          <div className="overflow-hidden rounded-xl border border-white/10">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px] text-left font-[family-name:var(--font-ibm-plex)] text-sm">
+                <thead className="bg-white/5 text-xs uppercase tracking-wider text-text-dim">
                   <tr>
-                    <td
-                      colSpan={4}
-                      className="px-3 py-8 text-center text-text-dim"
-                    >
-                      {orders.length === 0
-                        ? "No orders yet."
-                        : "No orders in this date range."}
-                    </td>
+                    <th className="px-3 py-3">Order</th>
+                    <th className="px-3 py-3">Customer</th>
+                    <th className="px-3 py-3">Amount</th>
+                    <th className="px-3 py-3">Status</th>
                   </tr>
-                ) : null}
-                {filteredOrders.map((order) => {
-                  const active = order.orderId === selectedId;
-                  return (
-                    <tr
-                      key={order.orderId}
-                      className={`cursor-pointer border-t border-white/10 ${
-                        active ? "bg-neon/10" : "hover:bg-white/5"
-                      }`}
-                      onClick={() => {
-                        setSelectedId(order.orderId);
-                        setWhatsappNote(null);
-                        setError(null);
-                        if (typeof window !== "undefined" && window.innerWidth < 1024) {
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }
-                      }}
-                    >
-                      <td className="px-3 py-3 text-neon">{order.orderId}</td>
-                      <td className="px-3 py-3">
-                        <div>{order.contact.name}</div>
-                        <div className="text-xs text-text-dim">
-                          +91 {order.contact.phone}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3">
-                        {formatINR(order.amountPaise)}
-                      </td>
-                      <td className="px-3 py-3 capitalize">
-                        {order.orderStatus}
-                        <div className="text-xs text-text-dim">
-                          {paymentMethodLabel(order.paymentMethod)} · {order.paymentStatus}
-                        </div>
+                </thead>
+                <tbody>
+                  {pageOrders.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-3 py-8 text-center text-text-dim"
+                      >
+                        {orders.length === 0
+                          ? "No orders yet."
+                          : "No orders in this date range."}
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ) : null}
+                  {pageOrders.map((order) => {
+                    const active = order.orderId === selectedId;
+                    return (
+                      <tr
+                        key={order.orderId}
+                        className={`cursor-pointer border-t border-white/10 ${
+                          active ? "bg-neon/10" : "hover:bg-white/5"
+                        }`}
+                        onClick={() => {
+                          setSelectedId(order.orderId);
+                          setWhatsappNote(null);
+                          setError(null);
+                          if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }
+                        }}
+                      >
+                        <td className="px-3 py-3 text-neon">{order.orderId}</td>
+                        <td className="px-3 py-3">
+                          <div>{order.contact.name}</div>
+                          <div className="text-xs text-text-dim">
+                            +91 {order.contact.phone}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          {formatINR(order.amountPaise)}
+                        </td>
+                        <td className="px-3 py-3 capitalize">
+                          {order.orderStatus}
+                          <div className="text-xs text-text-dim">
+                            {paymentMethodLabel(order.paymentMethod)} · {order.paymentStatus}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {filteredOrders.length > PAGE_SIZE ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="font-[family-name:var(--font-ibm-plex)] text-xs text-text-dim">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="h-9 border border-white/20 px-3 font-[family-name:var(--font-anton)] text-xs uppercase tracking-wider text-text-dim hover:text-white disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="h-9 border border-white/20 px-3 font-[family-name:var(--font-anton)] text-xs uppercase tracking-wider text-text-dim hover:text-white disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div
