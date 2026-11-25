@@ -81,7 +81,7 @@ export function CheckoutWizard() {
   const [errorOverride, setError] = useState<string | null | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [method, setMethod] = useState<CheckoutPaymentChoice>(
-    COD_CHECKOUT_ENABLED ? "cod" : "hdfc",
+    HDFC_CHECKOUT_ENABLED ? "hdfc" : "cod",
   );
   const step = stepOverride ?? paymentNotice?.step ?? "quantity";
   const error = errorOverride !== undefined ? errorOverride : (paymentNotice?.error ?? null);

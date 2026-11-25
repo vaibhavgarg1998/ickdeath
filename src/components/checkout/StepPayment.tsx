@@ -23,18 +23,18 @@ const METHODS: {
   enabled: boolean;
 }[] = [
   {
-    id: "cod",
-    label: "Cash on delivery",
-    detail: "Pay the courier in cash when the pack arrives.",
-    enabled: COD_CHECKOUT_ENABLED,
-  },
-  {
     id: "hdfc",
     label: "HDFC SmartGateway",
     detail: HDFC_CHECKOUT_ENABLED
       ? "UPI, cards, or netbanking."
       : "Online payment is paused.",
     enabled: HDFC_CHECKOUT_ENABLED,
+  },
+  {
+    id: "cod",
+    label: "Cash on delivery",
+    detail: "Pay the courier in cash when the pack arrives.",
+    enabled: COD_CHECKOUT_ENABLED,
   },
 ];
 
